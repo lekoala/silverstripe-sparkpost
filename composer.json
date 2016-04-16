@@ -1,0 +1,28 @@
+{
+    "name": "lekoala/silverstripe-sparkpost",
+    "description": "SparkPost integration for SilverStripe CMS",
+    "type": "silverstripe-module",
+    "keywords": [
+        "silverstripe",
+        "sparkpsot",
+        "module",
+        "cms"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "LeKoala",
+            "email": "thomas@lekoala.be"
+        }
+    ],
+    "require": {
+        "php": "5.4.8",
+        "silverstripe/framework": "~3.1"
+    },
+    "extra": {
+        "installer-name": "sparkpost"
+    },
+    "support": {
+        "issues": "https://github.com/lekoala/silverstripe-sparkpost/issues"
+    }
+}

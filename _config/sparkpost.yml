@@ -1,0 +1,23 @@
+---
+Name: sparkpost
+After:
+  - 'framework/*'
+---
+Director:
+  rules:
+    'sparkpost//$Action/$ID/$Name': 'SparkPostController'
+SparkPostMailer:
+  api_key: ''
+  disable_sending : false
+  enable_logging : false
+  log_folder : 'silverstripe-cache/emails'
+  siteconfig_from: 'ContactEmail'
+  siteconfig_to: 'ContactEmail'
+  default_params:
+    trackOpens: true
+    trackClicks: true
+    transactional: true
+  name_fallback: true
+SparkPostAdmin:
+  cache_enabled: true
+  inbound_subdomain: 'emails'
