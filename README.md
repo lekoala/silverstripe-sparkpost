@@ -43,11 +43,22 @@ By default, SparkPostController will do nothing. Feel free to add your own
 extensions to SparkPostController to define your own rules, like "Send an
 email to the admin when a receive a spam complaint".
 
-SparkPostController provides 4 extensions points:
-- updateHandleAnyEvent
-- updateHandleSyncEvent
-- updateHandleInboundEvent
-- updateHandleMessageEvent
+SparkPostController provides the following extension point:
+- onAnyEvent
+Extensions points depending on the type of the event:
+- onEngagementEvent
+- onGenerationEvent
+- onMessageEvent
+- onUnsubscribeEvent
+You can also inspect the whole payload and the batch id with
+- beforeProcessPayload : to check if a payload has been processed
+- afterProcessPayload : to mark the payload has been processed or log information
+
+You can test if your extension is working properly by visiting /sparkpost/test
+if your site is in dev mode. It will load sample data from the API.
+
+Make sure that you have a valid api key (not a subaccount key) to access
+features related to installation of the webhook through the CMS.
 
 Compatibility
 ==================

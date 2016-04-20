@@ -36,68 +36,123 @@ class SparkPostController extends Controller
 
     private static $allowed_actions = [
         'incoming',
+        'test',
     ];
+
+    /**
+     * @return SparkPostMailer
+     * @throws Exception
+     */
+    public function getMailer()
+    {
+        $mailer = Email::mailer();
+        if (!$mailer instanceof SparkPostMailer) {
+            throw new Exception('This class require to use SparkPostMailer');
+        }
+        return $mailer;
+    }
+
+    /**
+     * @return SparkPostApiClient
+     */
+    public function getClient()
+    {
+        return $this->getMailer()->getClient();
+    }
+
+    /**
+     * @param SS_HTTPRequest $req
+     */
+    public function test(SS_HTTPRequest $req)
+    {
+        if (!Director::isDev()) {
+            return 'You can only test in dev mode';
+        }
+
+        $client  = $this->getClient();
+        $payload = $client->getSampleEvents();
+
+        $this->processPayload($payload, 'TEST');
+
+        return 'TEST OK';
+    }
 
     /**
      * Handle incoming webhook
      *
+     * @link https://developers.sparkpost.com/api/#/reference/webhooks/create-a-webhook
      * @link https://www.sparkpost.com/blog/webhooks-beyond-the-basics/
      * @link https://support.sparkpost.com/customer/portal/articles/1976204-webhook-event-reference
      * @param SS_HTTPRequest $req
      */
     public function incoming(SS_HTTPRequest $req)
     {
+        // Each webhook batch contains the header X-MessageSystems-Batch-ID,
+        // which is useful for auditing and prevention of processing duplicate batches.
+        $batchId = $req->getHeader('X-MessageSystems-Batch-ID');
+
         $json = file_get_contents('php://input');
 
         // By default, return a valid response
         $response = $this->getResponse();
         $response->setStatusCode(200);
-        $response->setBody('');
+        $response->setBody('NO DATA');
 
         if (!$json) {
             return $response;
         }
 
-        $events = json_decode($json);
+        $payload = json_decode($json, JSON_OBJECT_AS_ARRAY);
 
-        $data = $events['msys'];
-
-        foreach ($data as $ev) {
-            $this->handleAnyEvent($ev);
-
-            $event = $event->event;
-            switch ($event) {
-                // Relay type
-                case self::EVENT_RELAY_DELIVERY:
-                case self::EVENT_RELAY_INJECTION:
-                case self::EVENT_RELAY_PERMFAIL:
-                case self::EVENT_RELAY_REJECTION:
-                case self::EVENT_RELAY_TEMPFAIL:
-                    $this->handleRelayEvent($ev);
-                    break;
-                // Tracking
-                case self::EVENT_CLICK:
-                case self::EVENT_OPEN:
-                case self::EVENT_DELIVERY:
-                    $this->handleTrackingEvent($ev);
-                    break;
-            }
+        try {
+            $this->processPayload($payload, $batchId);
+        } catch (Exception $ex) {
+            // Maybe processing payload will create exceptions, but we
+            // catch them to send a proper response to the API
         }
+
+        $response->setBody('OK');
+
         return $response;
     }
 
-    protected function handleAnyEvent($e)
+    /**
+     * Process data
+     * 
+     * @param array $payload
+     * @param string $batchId
+     */
+    protected function processPayload(array $payload, $batchId = null)
     {
-        $this->extend('updateHandleAnyEvent', $e);
-    }
+        $this->extend('beforeProcessPayload', $payload, $batchId);
 
-    protected function handleRelayEvent($e)
-    {
-        $this->extend('updateHandleRelayEvent', $e);
-    }
+        foreach ($payload as $r) {
+            $ev = $r['msys'];
 
-    protected function handleTrackingEvent($e)
-    {
-        $this->extend('updateHandleTrackingEvent', $e);
+            $type = key($ev);
+            $data = $ev[$type];
+
+            $this->extend('onAnyEvent', $ev);
+
+            switch ($type) {
+                case self::TYPE_ENGAGEMENT:
+                    $this->extend('onEngagementEvent', $ev);
+                    break;
+                case self::TYPE_GENERATION:
+                    $this->extend('onGenerationEvent', $ev);
+                    break;
+                case self::TYPE_MESSAGE:
+                    $this->extend('onMessageEvent', $ev);
+                    break;
+                case self::TYPE_RELAY:
+                    $this->extend('onRelayEvent', $ev);
+                    break;
+                case self::TYPE_UNSUBSCRIBE:
+                    $this->extend('onUnsubscribeEvent', $ev);
+                    break;
+            }
+        }
+
+        $this->extend('afterProcessPayload', $payload, $batchId);
     }
 }

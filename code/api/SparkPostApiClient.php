@@ -44,6 +44,13 @@ class SparkPostApiClient
     protected $results = [];
 
     /**
+     * The ID of the subaccount to use
+     * 
+     * @var int
+     */
+    protected $subaccount;
+
+    /**
      * Create a new instance of the SparkPostApiClient
      *
      * @param string $key Specify the string, or it will read env SPARKPOST_API_KEY or constant SPARKPOST_API_KEY
@@ -120,6 +127,26 @@ class SparkPostApiClient
     function setLogger(callable $logger)
     {
         $this->logger = $logger;
+    }
+
+    /**
+     * Get subaccount id
+     *
+     * @return int
+     */
+    function getSubaccount()
+    {
+        return $this->subaccount;
+    }
+
+    /**
+     * Set subaccount id
+     *
+     * @param int $subaccount
+     */
+    function setSubaccount($subaccount)
+    {
+        $this->subaccount = $subaccount;
     }
 
     /**
@@ -325,47 +352,82 @@ class SparkPostApiClient
     }
 
     /**
-     * Create a webhook
+     * Create a webhook by providing a webhooks object as the POST request body.
+     * On creation, events will begin to be pushed to the target URL specified in the POST request body.
+     *
+     * {
+     * "name": "Example webhook",
+     * "target": "http://client.example.com/example-webhook",
+     * "auth_type": "oauth2",
+     * "auth_request_details": {
+     * "url": "http://client.example.com/tokens",
+     * "body": {
+     *   "client_id": "CLIENT123",
+     *   "client_secret": "9sdfj791d2bsbf",
+     *   "grant_type": "client_credentials"
+     * }
+     * },
+     * "auth_token": "",
+     *   "events": [
+     *   "delivery",
+     *   "injection",
+     *   "open",
+     *   "click"
+     * ]
+     * }
      *
      * @param string $params
      * @return array
      */
     public function createWebhook($params = [])
     {
-        return $this->makeRequest('relay-webhooks', self::METHOD_POST, $params);
+        return $this->makeRequest('webhooks', self::METHOD_POST, $params);
     }
 
     /**
      * A simpler call to the api
      *
+     * @param string $name
      * @param string $target
-     * @param string|array $match A match object or the inbound domain
-     * @param array $name
-     * @return array
+     * @param array $events
+     * @param bool $auth Should we use basic auth ?
+     * @param array $credentials An array containing "username" and "password"
+     * @return type
      */
-    public function createSimpleWebhook($target, $match, $name = null)
+    public function createSimpleWebhook($name, $target, array $events = null,
+                                        $auth = false, $credentials = null)
     {
-        if (is_string($match)) {
-            $match = ['domain' => $match];
+        if ($events === null) {
+            $events = ['delivery', 'injection', 'open', 'click'];
         }
         $params = [
+            'name' => $name,
             'target' => $target,
-            'match' => $match,
+            'events' => $events,
         ];
-        if ($name) {
-            $params['name'] = $name;
+        if ($auth) {
+            if ($credentials === null) {
+                $credentials = ['username' => "sparkpost", "password" => "sparkpost"];
+            }
+            $params['auth_type']        = 'basic';
+            $params['auth_credentials'] = $credentials;
         }
         return $this->createWebhook($params);
     }
 
     /**
      * List all webhooks
-     *
+     * 
+     * @param string $timezone
      * @return array
      */
-    public function listAllWebhooks()
+    public function listAllWebhooks($timezone = null)
     {
-        return $this->makeRequest('relay-webhooks', self::METHOD_GET);
+        $params = [];
+        if ($timezone) {
+            $params['timezone'] = $timezone;
+        }
+        return $this->makeRequest('webhooks', self::METHOD_GET, $params);
     }
 
     /**
@@ -376,7 +438,7 @@ class SparkPostApiClient
      */
     public function getWebhook($id)
     {
-        return $this->makeRequest('relay-webhooks/'.$id, self::METHOD_GET);
+        return $this->makeRequest('webhooks/'.$id, self::METHOD_GET);
     }
 
     /**
@@ -388,8 +450,7 @@ class SparkPostApiClient
      */
     public function updateWebhook($id, $params = [])
     {
-        return $this->makeRequest('relay-webhooks/'.$id, self::METHOD_PUT,
-                $params);
+        return $this->makeRequest('webhooks/'.$id, self::METHOD_PUT, $params);
     }
 
     /**
@@ -400,7 +461,51 @@ class SparkPostApiClient
      */
     public function deleteWebhook($id)
     {
-        return $this->makeRequest('relay-webhooks/'.$id, self::METHOD_DELETE);
+        return $this->makeRequest('webhooks/'.$id, self::METHOD_DELETE);
+    }
+
+    /**
+     * Validate a webhook
+     *
+     * @param string $id
+     * @return array
+     */
+    public function validateWebhook($id)
+    {
+        return $this->makeRequest('webhooks/'.$id.'/validate',
+                self::METHOD_POST, '{"msys": {}}');
+    }
+
+    /**
+     * Retrieve status information regarding batches that have been generated
+     * for the given webhook by specifying its id in the URI path. Status
+     * information includes the successes of batches that previously failed to
+     * reach the webhook's target URL and batches that are currently in a failed state.
+     *
+     * @param string $id
+     * @param int $limit
+     * @return array
+     */
+    public function webhookBatchStatus($id, $limit = 1000)
+    {
+        return $this->makeRequest('webhooks/'.$id.'/batch-status',
+                self::METHOD_GET, ['limit' => 1000]);
+    }
+
+    /**
+     * List an example of the event data that will be posted by a Webhook for the specified events.
+     *
+     * @param string $events bounce, delivery...
+     * @return array
+     */
+    public function getSampleEvents($events = null)
+    {
+        $params = [];
+        if ($events) {
+            $params['events'] = $events;
+        }
+        return $this->makeRequest('webhooks/events/samples/', self::METHOD_GET,
+                $params);
     }
 
     /**
@@ -592,7 +697,6 @@ class SparkPostApiClient
      */
     protected function makeRequest($endpoint, $action = null, $data = null)
     {
-
         if (!$this->key) {
             throw new Exception('You must set an API key before making requests');
         }
@@ -615,6 +719,9 @@ class SparkPostApiClient
         $header   = [];
         $header[] = 'Content-Type: application/json';
         $header[] = 'Authorization: '.$this->key;
+        if ($this->subaccount) {
+            $header[] = 'X-MSYS-SUBACCOUNT: '.$this->subaccount;
+        }
 
         curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
         curl_setopt($ch, CURLOPT_USERAGENT,

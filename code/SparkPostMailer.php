@@ -58,7 +58,7 @@ class SparkPostMailer extends Mailer
     {
         if (!$this->client) {
             $key = self::config()->api_key;
-            if (!$key && defined('SPARKPOST_API_KEY')) {
+            if (!$key && defined('SPARKPOST_API_KEY') && SPARKPOST_API_KEY) {
                 $key = SPARKPOST_API_KEY;
             }
             if (empty($key)) {
@@ -67,6 +67,9 @@ class SparkPostMailer extends Mailer
             $this->client = new SparkPostApiClient($key);
             if (Director::isDev()) {
                 $this->client->setDebug(true);
+            }
+            if(defined('SPARKPOST_SUBACCOUNT_ID') && SPARKPOST_SUBACCOUNT_ID) {
+                $this->client->setSubaccount(SPARKPOST_SUBACCOUNT_ID);
             }
         }
         return $this->client;
