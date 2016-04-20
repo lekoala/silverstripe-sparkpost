@@ -253,8 +253,8 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             LeftAndMain::menu_title_for_class('SparkPost'));
         return [
             "CMS_ACCESS_SparkPost" => [
-                'name' => _t('SparkPostAdmin.ACCESS', "Access to '{title}' section",
-                    ['title' => $title]),
+                'name' => _t('SparkPostAdmin.ACCESS',
+                    "Access to '{title}' section", ['title' => $title]),
                 'category' => _t('Permission.CMS_ACCESS_CATEGORY', 'CMS Access'),
                 'help' => _t(
                     'SparkPostAdmin.ACCESS_HELP',
@@ -319,8 +319,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
                 $list = $client->listAllWebhooks();
                 if ($cache_enabled) {
                     $cache->save(serialize($list), $cache_key,
-                        [self::WEBHOOK_TAG],
-                        60 * self::WEBHOOK_CACHE_MINUTES);
+                        [self::WEBHOOK_TAG], 60 * self::WEBHOOK_CACHE_MINUTES);
                 }
             } catch (Exception $ex) {
                 $list = [];
@@ -459,7 +458,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     {
         $client = $this->getClient();
 
-        $host = $this->getDomainFromHost();
+        $host = $this->getDomain();
 
         $cache_enabled = $this->getCacheEnabled();
         if ($cache_enabled) {
@@ -497,7 +496,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     {
         $client = $this->getClient();
 
-        $host = $this->getDomainFromHost();
+        $host = $this->getDomain();
 
         $cache_enabled = $this->getCacheEnabled();
         if ($cache_enabled) {
@@ -545,7 +544,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     public function InboundUrl()
     {
         $subdomain = self::config()->inbound_subdomain;
-        $domain    = $this->getDomainFromHost();
+        $domain    = $this->getDomain();
         if ($domain) {
             return $subdomain.'.'.$domain;
         }
@@ -553,7 +552,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     }
 
     /**
-     * Get domain name
+     * Get domain name from current host
      *
      * @return boolean|string
      */
@@ -574,13 +573,44 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     }
 
     /**
+     * Get domain from admin email
+     * 
+     * @return boolean|string
+     */
+    public function getDomainFromAdmin()
+    {
+        $email = Email::config()->admin_email;
+        if ($email) {
+            $domain = substr(strrchr($email, "@"), 1);
+            return $domain;
+        }
+        return false;
+    }
+
+    /**
+     * Get domain
+     * 
+     * @return boolean|string
+     */
+    public function getDomain()
+    {
+        if (defined('SPARKPOST_DOMAIN') && !empty(SPARKPOST_DOMAIN)) {
+            return SPARKPOST_DOMAIN;
+        }
+        if (Director::isLive()) {
+            return $this->getDomainFromHost();
+        }
+        return $this->getDomainFromAdmin();
+    }
+
+    /**
      * Install domain form
      *
      * @return FormField
      */
     public function InstallDomainForm()
     {
-        $host = $this->getDomainFromHost();
+        $host = $this->getDomain();
 
         $fields = new CompositeField();
         $fields->push(new LiteralField('Info',
@@ -601,7 +631,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
 
         $client = $this->getClient();
 
-        $domain = $this->getDomainFromHost();
+        $domain = $this->getDomain();
 
         if (!$domain) {
             return $this->redirectBack();
@@ -639,19 +669,20 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             }
         }
 
+        $domain = $this->getDomain();
+
         $fields = new CompositeField();
 
         if ($spfVerified && $dkimVerified) {
             $fields->push(new LiteralField('Info',
                 '<div class="message good">'._t('SparkPostAdmin.DomainInstalled',
-                    'Domain {domain} is installed.',
-                    ['domain' => $this->getDomainFromHost()]).'</div>'));
+                    'Domain {domain} is installed.', ['domain' => $domain]).'</div>'));
         } else {
             $fields->push(new LiteralField('Info',
                 '<div class="message warning">'._t('SparkPostAdmin.DomainInstalledBut',
                     'Domain {domain} is installed, but is not properly configured. SPF records : {spf}. Domain key (DKIM) : {dkim}. Please check your dns zone.',
-                    ['domain' => $this->getDomainFromHost(), 'spf' => $spfVerified
-                            ? 'OK' : 'NOT OK', 'dkim' => $dkimVerified ? 'OK' : 'NOT OK']).'</div>'));
+                    ['domain' => $domain, 'spf' => $spfVerified ? 'OK' : 'NOT OK',
+                    'dkim' => $dkimVerified ? 'OK' : 'NOT OK']).'</div>'));
         }
         $fields->push(new LiteralField('doUninstallHook',
             '<a class="ss-ui-button" href="'.$this->Link('doUninstallHook').'">'._t('SparkPostAdmin.DOUNINSTALLDOMAIN',
@@ -667,7 +698,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
 
         $client = $this->getClient();
 
-        $domain = $this->getDomainFromHost();
+        $domain = $this->getDomain();
 
         if (!$domain) {
             return $this->redirectBack();
@@ -678,8 +709,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             if ($el) {
                 $client->deleteSendingDomain($domain);
             }
-            $this->getCache()->clean('matchingTag',
-                [self::SENDINGDOMAIN_TAG]);
+            $this->getCache()->clean('matchingTag', [self::SENDINGDOMAIN_TAG]);
             $this->getCache()->clean('matchingTag',
                 [self::SENDINGDOMAIN_TAG.'_verify']);
         } catch (Exception $ex) {
