@@ -183,6 +183,7 @@ class SparkPostApiClient
      * 'transactional'
      * 'sandbox'
      * 'useDraftTemplate'
+     * 'inlineCss'
      *
      * @param array $data
      * @return array
@@ -211,7 +212,8 @@ class SparkPostApiClient
             'startTime' => 'options.start_time',
             'transactional' => 'options.transactional',
             'sandbox' => 'options.sandbox',
-            'useDraftTemplate' => 'use_draft_template'
+            'useDraftTemplate' => 'use_draft_template',
+            'inlineCss' => 'options.inline_css',
         ];
 
         $data = $this->mapData($data, $mapping);

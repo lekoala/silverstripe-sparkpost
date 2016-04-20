@@ -17,6 +17,7 @@ SparkPostMailer:
     trackOpens: true
     trackClicks: true
     transactional: true
+    inlineCss: true
   name_fallback: true
 SparkPostAdmin:
   cache_enabled: true
