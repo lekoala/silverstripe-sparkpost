@@ -68,8 +68,12 @@ class SparkPostMailer extends Mailer
             if (Director::isDev()) {
                 $this->client->setDebug(true);
             }
-            if(defined('SPARKPOST_SUBACCOUNT_ID') && SPARKPOST_SUBACCOUNT_ID) {
-                $this->client->setSubaccount(SPARKPOST_SUBACCOUNT_ID);
+            $subaccountId = self::config()->subaccount_id;
+            if (!$subaccountId && defined('SPARKPOST_SUBACCOUNT_ID') && SPARKPOST_SUBACCOUNT_ID) {
+                $subaccountId = SPARKPOST_SUBACCOUNT_ID;
+            }
+            if ($subaccountId) {
+                $this->client->setSubaccount($subaccountId);
             }
         }
         return $this->client;
@@ -324,7 +328,7 @@ class SparkPostMailer extends Mailer
         if (self::config()->enable_logging) {
             // Append some extra information at the end
             $logContent = $htmlContent;
-            $logContent .= '<hr><pre>Debug infos:' . "\n\n";
+            $logContent .= '<hr><pre>Debug infos:'."\n\n";
             $logContent .= 'To : '.print_r($original_to, true)."\n";
             $logContent .= 'Subject : '.$subject."\n";
             $logContent .= 'Headers : '.print_r($customheaders, true)."\n";

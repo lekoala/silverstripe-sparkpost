@@ -8,6 +8,7 @@ Director:
     'sparkpost//$Action/$ID/$Name': 'SparkPostController'
 SparkPostMailer:
   api_key: ''
+  subaccount_id: ''
   disable_sending : false
   enable_logging : false
   log_folder : 'silverstripe-cache/emails'

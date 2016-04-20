@@ -24,6 +24,16 @@ You can also autoconfigure the module with the following constants in your _ss_e
 
 By defining the Api Key, the module will register a new mailer that will be used to send all emails.
 
+Subaccounts support
+==================
+
+If you use a master api key, but need to limit data access (https://developers.sparkpost.com/api/#/introduction/subaccounts) , you can configure a
+subaccount id
+
+        define('SPARKPOST_SUBACCOUNT_ID',1234);
+
+or through the YML config.
+
 SparkPost integration
 ==================
 
@@ -31,6 +41,9 @@ This module create a new admin section that allows you to:
 
 - List all messages events
 - Have a settings tab to configure domain and webhook
+
+NOTE : Make sure that you have a valid api key (not a subaccount key) to access
+features related to installation of the webhook through the CMS.
 
 Webhooks
 ==================
@@ -43,22 +56,21 @@ By default, SparkPostController will do nothing. Feel free to add your own
 extensions to SparkPostController to define your own rules, like "Send an
 email to the admin when a receive a spam complaint".
 
-SparkPostController provides the following extension point:
+SparkPostController provides the following extension point for all events:
 - onAnyEvent
-Extensions points depending on the type of the event:
+
+And the following extensions points depending on the type of the event:
 - onEngagementEvent
 - onGenerationEvent
 - onMessageEvent
 - onUnsubscribeEvent
+
 You can also inspect the whole payload and the batch id with
 - beforeProcessPayload : to check if a payload has been processed
 - afterProcessPayload : to mark the payload has been processed or log information
 
 You can test if your extension is working properly by visiting /sparkpost/test
 if your site is in dev mode. It will load sample data from the API.
-
-Make sure that you have a valid api key (not a subaccount key) to access
-features related to installation of the webhook through the CMS.
 
 Compatibility
 ==================
