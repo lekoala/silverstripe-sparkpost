@@ -27,8 +27,8 @@ By defining the Api Key, the module will register a new mailer that will be used
 Subaccounts support
 ==================
 
-If you use a master api key, but need to limit data access (https://developers.sparkpost.com/api/#/introduction/subaccounts) , you can configure a
-subaccount id
+If you use a master api key, but need to [limit data access] (https://developers.sparkpost.com/api/#/introduction/subaccounts),
+you can configure a subaccount id
 
         define('SPARKPOST_SUBACCOUNT_ID',1234);
 

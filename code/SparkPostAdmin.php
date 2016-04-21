@@ -93,7 +93,8 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         $messages = $this->Messages();
         if (is_string($messages)) {
             // The api returned an error
-            $messagesList = new LiteralField("MessageAlert", '<div class="message bad">'.$messages.'</div>');
+            $messagesList = new LiteralField("MessageAlert",
+                '<div class="message bad">'.$messages.'</div>');
         } else {
             $messagesList = GridField::create(
                     'Messages', false, $messages, $messageListConfig
@@ -378,8 +379,8 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
      */
     public function WebhookUrl()
     {
-        if (defined('SPARKPOST_WEBHOOK') && !empty(SPARKPOST_WEBHOOK)) {
-            return SPARKPOST_WEBHOOK;
+        if (self::config()->webhook_url) {
+            return self::config()->webhook_url;
         }
         if (Director::isLive()) {
             return Director::absoluteURL('/sparkpost/incoming');
@@ -581,17 +582,13 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     public function getDomainFromHost()
     {
         $host      = parse_url(Director::protocolAndHost(), PHP_URL_HOST);
-        $subdomain = self::config()->inbound_subdomain;
         $hostParts = explode('.', $host);
-        if (count($hostParts) < 2) {
+        $parts     = count($hostParts);
+        if ($parts < 2) {
             return false;
         }
-        $domain = $hostParts[count($hostParts) - 2].".".$hostParts[count($hostParts)
-            - 1];
-        if ($domain) {
-            return $domain;
-        }
-        return false;
+        $domain = $hostParts[$parts - 2].".".$hostParts[$parts - 1];
+        return $domain;
     }
 
     /**
@@ -616,13 +613,17 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
      */
     public function getDomain()
     {
-        if (defined('SPARKPOST_DOMAIN') && !empty(SPARKPOST_DOMAIN)) {
-            return SPARKPOST_DOMAIN;
+        if (self::config()->sending_domain) {
+            return self::config()->sending_domain;
         }
         if (Director::isLive()) {
             return $this->getDomainFromHost();
         }
-        return $this->getDomainFromAdmin();
+        $domain = $this->getDomainFromAdmin();
+        if(!$domain) {
+             return $this->getDomainFromHost();
+        }
+        return $domain;
     }
 
     /**

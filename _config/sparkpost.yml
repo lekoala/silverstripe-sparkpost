@@ -23,3 +23,5 @@ SparkPostMailer:
 SparkPostAdmin:
   cache_enabled: true
   inbound_subdomain: 'emails'
+  webhook_url: ''
+  sending_domain: ''
