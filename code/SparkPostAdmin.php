@@ -202,7 +202,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         if ($v === null) {
             $v = self::$cache_enabled;
         }
-        if(isset($_GET['refresh'])) {
+        if (isset($_GET['refresh'])) {
             return false;
         }
         return $v;
@@ -599,9 +599,9 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
      * 
      * @return boolean|string
      */
-    public function getDomainFromAdmin()
+    public function getDomainFromEmail()
     {
-        $email = Email::config()->admin_email;
+        $email = SparkPostMailer::resolveDefaultFromEmail();
         if ($email) {
             $domain = substr(strrchr($email, "@"), 1);
             return $domain;
@@ -622,9 +622,9 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         if (Director::isLive()) {
             return $this->getDomainFromHost();
         }
-        $domain = $this->getDomainFromAdmin();
-        if(!$domain) {
-             return $this->getDomainFromHost();
+        $domain = $this->getDomainFromEmail();
+        if (!$domain) {
+            return $this->getDomainFromHost();
         }
         return $domain;
     }
