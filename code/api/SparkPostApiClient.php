@@ -764,8 +764,22 @@ class SparkPostApiClient
         $this->results[] = $decodedResult;
 
         if (isset($decodedResult['errors'])) {
-            $errors = array_map(function($item) {
+            $errors = array_map(function($item) use($data) {
                 $message = $item['message'];
+                // For invalid domains, append domain name to make error more useful
+                if ($item['code'] == 7001) {
+                    $from = '';
+                    if (!is_array($data)) {
+                        $data = json_decode($data,JSON_OBJECT_AS_ARRAY);
+                    }
+                    if (isset($data['content']['from'])) {
+                        $from = $data['content']['from'];
+                    }
+                    if ($from) {
+                        $domain = substr(strrchr($from, "@"), 1);
+                        $message .= ' ('.$domain.')';
+                    }
+                }
                 if (isset($item['description'])) {
                     $message .= ': '.$item['description'];
                 }
