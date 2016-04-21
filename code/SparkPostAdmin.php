@@ -90,35 +90,41 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             new GridFieldFooter()
         );
 
-        $messagesList = GridField::create(
-                'Messages', false, $this->Messages(), $messageListConfig
-            )->addExtraClass("messages_grid");
+        $messages = $this->Messages();
+        if (is_string($messages)) {
+            // The api returned an error
+            $messagesList = new LiteralField("MessageAlert", '<div class="message bad">'.$messages.'</div>');
+        } else {
+            $messagesList = GridField::create(
+                    'Messages', false, $messages, $messageListConfig
+                )->addExtraClass("messages_grid");
 
-        $columns = $messageListConfig->getComponentByType('GridFieldDataColumns');
-        $columns->setDisplayFields([
-            'timestamp' => _t('SparkPostAdmin.EventDate', 'Date'),
-            'type' => _t('SparkPostAdmin.EventType', 'Type'),
-            'rcpt_to' => _t('SparkPostAdmin.EventRecipient', 'Recipient'),
-            'subject' => _t('SparkPostAdmin.EventSubject', 'Subject'),
-            'friendly_from' => _t('SparkPostAdmin.EventSender', 'Sender'),
-        ]);
+            $columns = $messageListConfig->getComponentByType('GridFieldDataColumns');
+            $columns->setDisplayFields([
+                'timestamp' => _t('SparkPostAdmin.EventDate', 'Date'),
+                'type' => _t('SparkPostAdmin.EventType', 'Type'),
+                'rcpt_to' => _t('SparkPostAdmin.EventRecipient', 'Recipient'),
+                'subject' => _t('SparkPostAdmin.EventSubject', 'Subject'),
+                'friendly_from' => _t('SparkPostAdmin.EventSender', 'Sender'),
+            ]);
 
-        $columns->setFieldFormatting([
-            'timestamp' => function ($value, &$item) {
-                return date('Y-m-d H:i:s', strtotime($value));
+            $columns->setFieldFormatting([
+                'timestamp' => function ($value, &$item) {
+                    return date('Y-m-d H:i:s', strtotime($value));
+                }
+            ]);
+
+            // Validator setup
+            $validator = null;
+            if ($record && method_exists($record, 'getValidator')) {
+                $validator = $record->getValidator();
             }
-        ]);
 
-        // Validator setup
-        $validator = null;
-        if ($record && method_exists($record, 'getValidator')) {
-            $validator = $record->getValidator();
-        }
-
-        if ($validator) {
-            $messageListConfig
-                ->getComponentByType('GridFieldDetailForm')
-                ->setValidator($validator);
+            if ($validator) {
+                $messageListConfig
+                    ->getComponentByType('GridFieldDetailForm')
+                    ->setValidator($validator);
+            }
         }
 
         // Create tabs
@@ -199,11 +205,11 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     }
 
     /**
-     * List of MandrillMessage
+     * List of messages events
      *
      * Messages are cached to avoid hammering the api
      *
-     * @return \ArrayList
+     * @return ArrayList|string
      */
     public function Messages()
     {
@@ -222,7 +228,11 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         } else {
             $params = [];
 
-            $messages = $this->getClient()->searchMessageEvents($params);
+            try {
+                $messages = $this->getClient()->searchMessageEvents($params);
+            } catch (Exception $ex) {
+                return $ex->getMessage();
+            }
 
             //5 minutes cache
             if ($cache_enabled) {
@@ -275,7 +285,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     }
 
     /**
-     * Check the permission to make sure the current user has a mandrill
+     * Check the permission for current user
      *
      * @return bool
      */
@@ -408,7 +418,8 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
 
         try {
             if (defined('SS_DEFAULT_ADMIN_USERNAME') && SS_DEFAULT_ADMIN_USERNAME) {
-                $client->createSimpleWebhook('SilverStripe webhook', $url, null, true,
+                $client->createSimpleWebhook('SilverStripe webhook', $url, null,
+                    true,
                     ['username' => SS_DEFAULT_ADMIN_USERNAME, 'password' => SS_DEFAULT_ADMIN_PASSWORD]);
             } else {
                 $client->createSimpleWebhook('SilverStripe webhook', $url);
