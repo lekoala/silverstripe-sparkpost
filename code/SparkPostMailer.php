@@ -381,19 +381,23 @@ class SparkPostMailer extends Mailer
     {
         $original_from = $from;
         if (!empty($from)) {
+            // If we have a sender, validate its email
             $from = self::get_email_from_rfc_email($from);
             if (filter_var($from, FILTER_VALIDATE_EMAIL)) {
                 return $original_from;
             }
         }
+        // Look in siteconfig for default sender
         $config       = SiteConfig::current_site_config();
         $config_field = self::config()->siteconfig_from;
         if ($config_field && !empty($config->$config_field)) {
             return $config->$config_field;
         }
+        // Use admin email
         if ($admin = Email::config()->admin_email) {
             return $admin;
         }
+        // If we still don't have anything, create something based on the domain
         return self::createDefaultEmail();
     }
 
