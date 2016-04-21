@@ -32,21 +32,17 @@ class SparkPostMailer extends Mailer
     /**
      * Helper method to initialize the mailer
      *
-     * @param string $apiKey
-     * @return \SparkPostMailer
+     * @return SparkPostMailer
      */
     public static function setAsMailer()
     {
-        $mailer = self::getInstance();
+        $mailer  = self::getInstance();
+        // On SilverStripe 3.1, injector is not used
+        $version = Deprecation::dump_settings()['version'];
+        if (version_compare($version, '3.2.0', '<')) {
+            Email::set_mailer($mailer);
+        }
         Injector::inst()->registerService($mailer, 'Mailer');
-
-        if (defined('SPARKPOST_SENDING_DISABLED') && SPARKPOST_SENDING_DISABLED) {
-            Config::inst()->update(__CLASS__, 'disable_sending', true);
-        }
-        if (defined('SPARKPOST_ENABLE_LOGGING') && SPARKPOST_ENABLE_LOGGING) {
-            Config::inst()->update(__CLASS__, 'enable_logging', true);
-        }
-
         return $mailer;
     }
 
@@ -58,9 +54,6 @@ class SparkPostMailer extends Mailer
     {
         if (!$this->client) {
             $key = self::config()->api_key;
-            if (!$key && defined('SPARKPOST_API_KEY') && SPARKPOST_API_KEY) {
-                $key = SPARKPOST_API_KEY;
-            }
             if (empty($key)) {
                 throw new Exception("Api key is not defined or empty");
             }
@@ -69,9 +62,6 @@ class SparkPostMailer extends Mailer
                 $this->client->setDebug(true);
             }
             $subaccountId = self::config()->subaccount_id;
-            if (!$subaccountId && defined('SPARKPOST_SUBACCOUNT_ID') && SPARKPOST_SUBACCOUNT_ID) {
-                $subaccountId = SPARKPOST_SUBACCOUNT_ID;
-            }
             if ($subaccountId) {
                 $this->client->setSubaccount($subaccountId);
             }
