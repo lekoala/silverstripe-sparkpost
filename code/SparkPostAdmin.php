@@ -202,6 +202,9 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         if ($v === null) {
             $v = self::$cache_enabled;
         }
+        if(isset($_GET['refresh'])) {
+            return false;
+        }
         return $v;
     }
 
