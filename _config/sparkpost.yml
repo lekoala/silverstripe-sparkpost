@@ -12,7 +12,7 @@ SparkPostMailer:
   disable_sending : false
   enable_logging : false
   log_folder : 'silverstripe-cache/emails'
-  siteconfig_from: 'ContactEmail'
+  siteconfig_from: 'DefaultFromEmail'
   siteconfig_to: 'ContactEmail'
   default_params:
     trackOpens: true
