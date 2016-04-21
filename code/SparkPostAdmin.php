@@ -106,6 +106,8 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
 
             $columns = $messageListConfig->getComponentByType('GridFieldDataColumns');
             $columns->setDisplayFields([
+                'transmission_id' => _t('SparkPostAdmin.EventTransmissionId',
+                    'Id'),
                 'timestamp' => _t('SparkPostAdmin.EventDate', 'Date'),
                 'type' => _t('SparkPostAdmin.EventType', 'Type'),
                 'rcpt_to' => _t('SparkPostAdmin.EventRecipient', 'Recipient'),
@@ -116,7 +118,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             $columns->setFieldFormatting([
                 'timestamp' => function ($value, &$item) {
                     return date('Y-m-d H:i:s', strtotime($value));
-                }
+                },
             ]);
 
             // Validator setup
@@ -246,9 +248,24 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             }
         }
 
+        // Consolidate Subject/Sender for open and click events
+        $transmissions = [];
+        foreach ($messages as $message) {
+            if (empty($message['transmission_id']) || empty($message['subject'])) {
+                continue;
+            }
+            if (isset($transmissions[$message['transmission_id']])) {
+                continue;
+            }
+            $transmissions[$message['transmission_id']] = $message;
+        }
+
         $list = new ArrayList();
         if ($messages) {
             foreach ($messages as $message) {
+                if(empty($message['subject']) && isset($transmissions[$message['transmission_id']])) {
+                    $message = array_merge($transmissions[$message['transmission_id']], $message);
+                }
                 $m = new ArrayData($message);
                 $list->push($m);
             }
