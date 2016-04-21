@@ -35,6 +35,10 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     public function init()
     {
         parent::init();
+
+        if (isset($_GET['refresh'])) {
+            $this->clearAllCache();
+        }
     }
 
     public function index($request)
@@ -201,9 +205,6 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         $v = $this->config()->cache_enabled;
         if ($v === null) {
             $v = self::$cache_enabled;
-        }
-        if (isset($_GET['refresh'])) {
-            return false;
         }
         return $v;
     }
@@ -743,5 +744,14 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         }
 
         return $this->redirectBack();
+    }
+
+    protected function clearAllCache()
+    {
+        $this->getCache()->clean('matchingTag', [self::MESSAGE_TAG]);
+        $this->getCache()->clean('matchingTag', [self::WEBHOOK_TAG]);
+        $this->getCache()->clean('matchingTag', [self::SENDINGDOMAIN_TAG]);
+        $this->getCache()->clean('matchingTag',
+            [self::SENDINGDOMAIN_TAG.'_verify']);
     }
 }
