@@ -38,12 +38,34 @@ class SparkPostMailer extends Mailer
     {
         $mailer  = self::getInstance();
         // On SilverStripe 3.1, injector is not used
-        $version = Deprecation::dump_settings()['version'];
+        $version = self::getFrameworkVersion();
         if (version_compare($version, '3.2.0', '<')) {
             Email::set_mailer($mailer);
         }
         Injector::inst()->registerService($mailer, 'Mailer');
         return $mailer;
+    }
+
+    /**
+     * Get version
+     *
+     * @return string
+     */
+    public static function getFrameworkVersion()
+    {
+        $lm      = new LeftAndMain();
+        $version = $lm->CMSVersion();
+        if ($version) {
+            $parts = explode(', ', $version);
+            foreach ($parts as $part) {
+                $p = explode(': ', $part);
+                if ($p[0] == 'Framework') {
+                    return $p[1];
+                }
+            }
+        }
+        // As fallback, we can use deprecation but this can be changed by the user
+        return Deprecation::dump_settings()['version'];
     }
 
     /**
