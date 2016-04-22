@@ -7,33 +7,6 @@
  */
 class SparkPostController extends Controller
 {
-    //
-    const TYPE_MESSAGE           = 'message_event';
-    const TYPE_ENGAGEMENT        = 'track_event';
-    const TYPE_GENERATION        = 'gen_event';
-    const TYPE_UNSUBSCRIBE       = 'unsubscribe_event';
-    const TYPE_RELAY             = 'relay_event';
-    //
-    const EVENT_DELIVERY         = 'delivery';
-    const EVENT_BOUNCE           = 'bounce';
-    const EVENT_INJECTION        = 'injection';
-    const EVENT_SMS_STATUS       = 'sms_status';
-    const EVENT_SPAM_COMPLAINT   = 'spam_complaint';
-    const EVENT_OUT_OF_BAND      = 'out_of_band';
-    const EVENT_POLICY_REJECTION = 'policy_rejection';
-    const EVENT_DELAY            = 'delay';
-    const EVENT_OPEN             = 'open';
-    const EVENT_CLICK            = 'click';
-    const EVENT_GEN_FAILURE      = 'generation_failure';
-    const EVENT_GEN_REJECTION    = 'generation_rejection';
-    const EVENT_LIST_UNSUB       = 'list_unsubscribe';
-    const EVENT_LINK_UNSUB       = 'link_unsubscribe';
-    const EVENT_RELAY_INJECTION  = 'relay_injection';
-    const EVENT_RELAY_REJECTION  = 'relay_rejection';
-    const EVENT_RELAY_DELIVERY   = 'relay_delivery';
-    const EVENT_RELAY_TEMPFAIL   = 'relay_tempfail';
-    const EVENT_RELAY_PERMFAIL   = 'relay_permfail';
-
     private static $allowed_actions = [
         'incoming',
         'test',
@@ -135,19 +108,19 @@ class SparkPostController extends Controller
             $this->extend('onAnyEvent', $ev);
 
             switch ($type) {
-                case self::TYPE_ENGAGEMENT:
+                case SparkPostApiClient::TYPE_ENGAGEMENT:
                     $this->extend('onEngagementEvent', $ev);
                     break;
-                case self::TYPE_GENERATION:
+                case SparkPostApiClient::TYPE_GENERATION:
                     $this->extend('onGenerationEvent', $ev);
                     break;
-                case self::TYPE_MESSAGE:
+                case SparkPostApiClient::TYPE_MESSAGE:
                     $this->extend('onMessageEvent', $ev);
                     break;
-                case self::TYPE_RELAY:
+                case SparkPostApiClient::TYPE_RELAY:
                     $this->extend('onRelayEvent', $ev);
                     break;
-                case self::TYPE_UNSUBSCRIBE:
+                case SparkPostApiClient::TYPE_UNSUBSCRIBE:
                     $this->extend('onUnsubscribeEvent', $ev);
                     break;
             }

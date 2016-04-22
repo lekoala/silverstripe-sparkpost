@@ -147,13 +147,14 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         );
 
         if ($this->CanConfigureApi()) {
-            $webhookTabData = $this->WebhookTab();
-            $domainTabData  = $this->DomainTab();
 
             $settingsTab = new Tab('Settings',
                 _t('SparkPostAdmin.Settings', 'Settings'));
 
+            $webhookTabData = $this->WebhookTab();
             $settingsTab->push($webhookTabData);
+
+            $domainTabData = $this->DomainTab();
             $settingsTab->push($domainTabData);
 
             $fields->addFieldToTab('Root', $settingsTab);
@@ -402,7 +403,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     public function WebhookUrl()
     {
         if (self::config()->webhook_url) {
-            return rtrim(self::config()->webhook_url,'/').'/sparkpost/incoming';
+            return rtrim(self::config()->webhook_url, '/').'/sparkpost/incoming';
         }
         if (Director::isLive()) {
             return Director::absoluteURL('/sparkpost/incoming');
@@ -441,11 +442,11 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
 
         try {
             if (defined('SS_DEFAULT_ADMIN_USERNAME') && SS_DEFAULT_ADMIN_USERNAME) {
-                $client->createSimpleWebhook('SilverStripe webhook', $url, null,
+                $client->createSimpleWebhook($description, $url, null,
                     true,
                     ['username' => SS_DEFAULT_ADMIN_USERNAME, 'password' => SS_DEFAULT_ADMIN_PASSWORD]);
             } else {
-                $client->createSimpleWebhook('SilverStripe webhook', $url);
+                $client->createSimpleWebhook($description, $url);
             }
             $this->getCache()->clean('matchingTag', [self::WEBHOOK_TAG]);
         } catch (Exception $ex) {

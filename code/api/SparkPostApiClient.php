@@ -7,13 +7,40 @@
  */
 class SparkPostApiClient
 {
-    const CLIENT_VERSION  = '0.1';
-    const API_ENDPOINT    = 'https://api.sparkpost.com/api/v1';
-    const METHOD_GET      = "GET";
-    const METHOD_POST     = "POST";
-    const METHOD_PUT      = "PUT";
-    const METHOD_DELETE   = "DELETE";
-    const DATETIME_FORMAT = 'Y-m-d\TH:i';
+    // CLIENT SETTINGS
+    const CLIENT_VERSION         = '0.1';
+    const API_ENDPOINT           = 'https://api.sparkpost.com/api/v1';
+    const METHOD_GET             = "GET";
+    const METHOD_POST            = "POST";
+    const METHOD_PUT             = "PUT";
+    const METHOD_DELETE          = "DELETE";
+    const DATETIME_FORMAT        = 'Y-m-d\TH:i';
+    // SPARKPOST TYPES
+    const TYPE_MESSAGE           = 'message_event';
+    const TYPE_ENGAGEMENT        = 'track_event';
+    const TYPE_GENERATION        = 'gen_event';
+    const TYPE_UNSUBSCRIBE       = 'unsubscribe_event';
+    const TYPE_RELAY             = 'relay_event';
+    // SPARKPOST EVENTS
+    const EVENT_DELIVERY         = 'delivery';
+    const EVENT_BOUNCE           = 'bounce';
+    const EVENT_INJECTION        = 'injection';
+    const EVENT_SMS_STATUS       = 'sms_status';
+    const EVENT_SPAM_COMPLAINT   = 'spam_complaint';
+    const EVENT_OUT_OF_BAND      = 'out_of_band';
+    const EVENT_POLICY_REJECTION = 'policy_rejection';
+    const EVENT_DELAY            = 'delay';
+    const EVENT_OPEN             = 'open';
+    const EVENT_CLICK            = 'click';
+    const EVENT_GEN_FAILURE      = 'generation_failure';
+    const EVENT_GEN_REJECTION    = 'generation_rejection';
+    const EVENT_LIST_UNSUB       = 'list_unsubscribe';
+    const EVENT_LINK_UNSUB       = 'link_unsubscribe';
+    const EVENT_RELAY_INJECTION  = 'relay_injection';
+    const EVENT_RELAY_REJECTION  = 'relay_rejection';
+    const EVENT_RELAY_DELIVERY   = 'relay_delivery';
+    const EVENT_RELAY_TEMPFAIL   = 'relay_tempfail';
+    const EVENT_RELAY_PERMFAIL   = 'relay_permfail';
 
     /**
      * Your api key
@@ -398,7 +425,9 @@ class SparkPostApiClient
                                         $auth = false, $credentials = null)
     {
         if ($events === null) {
-            $events = ['delivery', 'injection', 'open', 'click'];
+            // Default to the most used events
+            $events = ['delivery', 'injection', 'open', 'click', 'bounce', 'spam_complaint',
+                'list_unsubscribe', 'link_unsubscribe'];
         }
         $params = [
             'name' => $name,
@@ -770,7 +799,7 @@ class SparkPostApiClient
                 if (isset($item['code']) && $item['code'] == 7001) {
                     $from = '';
                     if (!is_array($data)) {
-                        $data = json_decode($data,JSON_OBJECT_AS_ARRAY);
+                        $data = json_decode($data, JSON_OBJECT_AS_ARRAY);
                     }
                     if (isset($data['content']['from'])) {
                         $from = $data['content']['from'];
