@@ -767,7 +767,7 @@ class SparkPostApiClient
             $errors = array_map(function($item) use($data) {
                 $message = $item['message'];
                 // For invalid domains, append domain name to make error more useful
-                if ($item['code'] == 7001) {
+                if (isset($item['code']) && $item['code'] == 7001) {
                     $from = '';
                     if (!is_array($data)) {
                         $data = json_decode($data,JSON_OBJECT_AS_ARRAY);
