@@ -263,8 +263,9 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         $list = new ArrayList();
         if ($messages) {
             foreach ($messages as $message) {
-                if(empty($message['subject']) && isset($transmissions[$message['transmission_id']])) {
-                    $message = array_merge($transmissions[$message['transmission_id']], $message);
+                if (empty($message['subject']) && isset($transmissions[$message['transmission_id']])) {
+                    $message = array_merge($transmissions[$message['transmission_id']],
+                        $message);
                 }
                 $m = new ArrayData($message);
                 $list->push($m);
@@ -401,7 +402,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     public function WebhookUrl()
     {
         if (self::config()->webhook_url) {
-            return self::config()->webhook_url;
+            return self::config()->webhook_url.'/sparkpost/incoming';
         }
         if (Director::isLive()) {
             return Director::absoluteURL('/sparkpost/incoming');
