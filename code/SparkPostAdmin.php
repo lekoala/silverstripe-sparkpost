@@ -402,7 +402,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     public function WebhookUrl()
     {
         if (self::config()->webhook_url) {
-            return self::config()->webhook_url.'/sparkpost/incoming';
+            return rtrim(self::config()->webhook_url,'/').'/sparkpost/incoming';
         }
         if (Director::isLive()) {
             return Director::absoluteURL('/sparkpost/incoming');
