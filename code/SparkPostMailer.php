@@ -377,6 +377,8 @@ class SparkPostMailer extends Mailer
             return [$original_to, $subject, $htmlContent, $customheaders];
         }
 
+        $logLevel = self::config()->log_level ? self::config()->log_level : 7;
+
         try {
             $result = $this->getClient()->createTransmissions($params);
 
@@ -385,9 +387,9 @@ class SparkPostMailer extends Mailer
             }
 
             SS_Log::log("No recipient was accepted for transmission ".$result['id'],
-                SS_Log::DEBUG);
+                $logLevel);
         } catch (Exception $ex) {
-            SS_Log::log($ex->getMessage(), SS_Log::DEBUG);
+            SS_Log::log($ex->getMessage(), $logLevel);
         }
 
         return false;
