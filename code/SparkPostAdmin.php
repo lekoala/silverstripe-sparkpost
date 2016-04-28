@@ -264,9 +264,15 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         $list = new ArrayList();
         if ($messages) {
             foreach ($messages as $message) {
-                if (empty($message['subject']) && isset($transmissions[$message['transmission_id']])) {
+                // If we have a transmission id but no subject, try to find the transmission details
+                if (isset($message['transmission_id']) && empty($message['subject'])
+                    && isset($transmissions[$message['transmission_id']])) {
                     $message = array_merge($transmissions[$message['transmission_id']],
                         $message);
+                }
+                // In some case (errors, etc) we don't have a friendly from
+                if (empty($message['friendly_from']) && isset($message['msg_from'])) {
+                    $message['friendly_from'] = $message['msg_from'];
                 }
                 $m = new ArrayData($message);
                 $list->push($m);
@@ -442,8 +448,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
 
         try {
             if (defined('SS_DEFAULT_ADMIN_USERNAME') && SS_DEFAULT_ADMIN_USERNAME) {
-                $client->createSimpleWebhook($description, $url, null,
-                    true,
+                $client->createSimpleWebhook($description, $url, null, true,
                     ['username' => SS_DEFAULT_ADMIN_USERNAME, 'password' => SS_DEFAULT_ADMIN_PASSWORD]);
             } else {
                 $client->createSimpleWebhook($description, $url);
