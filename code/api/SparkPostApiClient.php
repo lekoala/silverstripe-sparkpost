@@ -795,18 +795,24 @@ class SparkPostApiClient
         if (isset($decodedResult['errors'])) {
             $errors = array_map(function($item) use($data) {
                 $message = $item['message'];
-                // For invalid domains, append domain name to make error more useful
-                if (isset($item['code']) && $item['code'] == 7001) {
-                    $from = '';
-                    if (!is_array($data)) {
-                        $data = json_decode($data, JSON_OBJECT_AS_ARRAY);
-                    }
-                    if (isset($data['content']['from'])) {
-                        $from = $data['content']['from'];
-                    }
-                    if ($from) {
-                        $domain = substr(strrchr($from, "@"), 1);
-                        $message .= ' ('.$domain.')';
+
+                // Append code to message
+                if (isset($item['code'])) {
+                    $message .= ' ( code : '.$item['code'].' )';
+
+                    // For invalid domains, append domain name to make error more useful
+                    if ($item['code'] == 7001) {
+                        $from = '';
+                        if (!is_array($data)) {
+                            $data = json_decode($data, JSON_OBJECT_AS_ARRAY);
+                        }
+                        if (isset($data['content']['from'])) {
+                            $from = $data['content']['from'];
+                        }
+                        if ($from) {
+                            $domain = substr(strrchr($from, "@"), 1);
+                            $message .= ' ('.$domain.')';
+                        }
                     }
                 }
                 if (isset($item['description'])) {
@@ -814,7 +820,7 @@ class SparkPostApiClient
                 }
                 return $message;
             }, $decodedResult['errors']);
-            throw new Exception("The API returned the following error(s) : ".implode(", ",
+            throw new Exception("The API returned the following error(s) : ".implode("; ",
                 $errors));
         }
 
