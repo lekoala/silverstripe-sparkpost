@@ -795,10 +795,9 @@ class SparkPostApiClient
         if (isset($decodedResult['errors'])) {
             $errors = array_map(function($item) use($data) {
                 $message = $item['message'];
-
-                // Append code to message
+                // Prepend code to message
                 if (isset($item['code'])) {
-                    $message .= ' ( code : '.$item['code'].' )';
+                    $message = $item['code'].' - '.$message;
 
                     // For invalid domains, append domain name to make error more useful
                     if ($item['code'] == 7001) {
@@ -812,6 +811,25 @@ class SparkPostApiClient
                         if ($from) {
                             $domain = substr(strrchr($from, "@"), 1);
                             $message .= ' ('.$domain.')';
+                        }
+                    }
+
+                    // For invalid recipients, append recipients
+                    if ($item['code'] == 5002) {
+                        if (isset($data['recipients'])) {
+                            if (empty($data['recipients'])) {
+                                $message .= ' (empty recipients list)';
+                            } else {
+                                if(is_array($data['recipients'])) {
+                                    $addresses = [];
+                                    foreach($data['recipients'] as $recipient) {
+                                        $addresses[] = json_encode($recipient['address']);
+                                    }
+                                }
+                                $message .= ' (' .implode(',', $addresses) .')';
+                            }
+                        } else {
+                            $message .= ' (no recipients defined)';
                         }
                     }
                 }
