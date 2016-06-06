@@ -221,11 +221,12 @@ class SparkPostApiClient
      * 'substitutionData'
      * 'description'
      * 'returnPath'
-     * replyTo'
+     * 'replyTo'
      * 'subject'
      * 'from'
      * 'html'
      * 'text'
+     * 'attachments'
      * 'rfc822'
      * 'customHeaders'
      * 'recipients'
@@ -256,6 +257,7 @@ class SparkPostApiClient
             'from' => 'content.from',
             'html' => 'content.html',
             'text' => 'content.text',
+            'attachments' => 'content.attachments',
             'rfc822' => 'content.email_rfc822',
             'customHeaders' => 'content.headers',
             'recipients' => 'recipients',
