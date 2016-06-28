@@ -333,6 +333,13 @@ class SparkPostMailer extends Mailer
             $params['attachments'] = $attachments;
         }
 
+        // Handle Reply-To custom header properly
+        if (isset($customheaders['Reply-To'])) {
+            $params['replyTo'] = $customheaders['Reply-To'];
+            unset($customheaders['Reply-To']);
+        }
+
+
         if ($customheaders) {
             $params['customHeaders'] = $customheaders;
         }
