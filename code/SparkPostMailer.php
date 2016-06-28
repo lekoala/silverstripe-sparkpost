@@ -24,6 +24,13 @@ class SparkPostMailer extends Mailer
      */
     protected $client;
 
+    /**
+     * Last exception from the client
+     * 
+     * @var Exception
+     */
+    protected $lastException;
+
     public function __construct()
     {
         self::$instance = $this;
@@ -396,10 +403,20 @@ class SparkPostMailer extends Mailer
             SS_Log::log("No recipient was accepted for transmission ".$result['id'],
                 $logLevel);
         } catch (Exception $ex) {
+            $this->lastException = $ex;
             SS_Log::log($ex->getMessage(), $logLevel);
         }
 
         return false;
+    }
+
+    /**
+     * Get last exception
+     * 
+     * @return Exception
+     */
+    public function getLastException() {
+        return $this->lastException;
     }
 
     /**

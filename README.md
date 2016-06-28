@@ -45,6 +45,22 @@ This module create a new admin section that allows you to:
 NOTE : Make sure that you have a valid api key (not a subaccount key) to access
 features related to installation of the webhook through the CMS.
 
+Handling errors
+==================
+
+The mailer behaves like the default mailer. This means that if sending fails,
+"false" will be returned.
+
+Any error will be logged. If you want to access the error, you can follow this
+kind of approach:
+
+    $result = $email->send();
+    if ($result) {
+      $this->sessionMessage("Message has been sent", 'good');
+    } else {
+      $this->sessionMessage("Sending failed:" . SparkPostMailer::getLastException()->getMessage(), 'bad');
+    }
+
 Webhooks
 ==================
 
