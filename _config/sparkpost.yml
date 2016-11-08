@@ -15,6 +15,7 @@ SparkPostMailer:
   log_level : 4 
   siteconfig_from: 'DefaultFromEmail'
   siteconfig_to: 'ContactEmail'
+  provide_plain: true
   default_params:
     trackOpens: true
     trackClicks: true

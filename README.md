@@ -88,6 +88,13 @@ You can also inspect the whole payload and the batch id with
 You can test if your extension is working properly by visiting /sparkpost/test
 if your site is in dev mode. It will load sample data from the API.
 
+Preventing spam
+==================
+
+- Make sure you have properly configured your SPF and DKIM records for your domain.
+- Create a [DMARC record] (https://www.unlocktheinbox.com/dmarcwizard/)
+- Leave provide_plain option to true or provide plain content for your emails
+
 Compatibility
 ==================
 Tested with 3.x

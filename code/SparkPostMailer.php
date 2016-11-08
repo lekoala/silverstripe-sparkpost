@@ -314,14 +314,17 @@ class SparkPostMailer extends Mailer
             unset($customheaders['X-SparkPostMailer']);
         }
 
+        // Always set some default content
+        if (!$plainContent && $htmlContent && self::config()->provide_plain) {
+            $plainContent = $this->convertHtmlToText($htmlContent);
+        }
+
         if ($plainContent) {
             $params['text'] = $plainContent;
         }
         if ($htmlContent) {
             $params['html'] = $htmlContent;
         }
-
-
 
         // Handle files attachments
         if ($attachedFiles) {
@@ -411,11 +414,37 @@ class SparkPostMailer extends Mailer
     }
 
     /**
+     * 
+     * @param string $content
+     * @return string
+     */
+    protected function convertHtmlToText($content)
+    {
+        // Prevent styles to be included
+        $content = preg_replace('/<style.*>([\s\S]*)<\/style>/i', '', $content);
+        // Convert html entities to strip them later on
+        $content = html_entity_decode($content);
+        // Convert new lines for relevant tags
+        $content = str_ireplace(['<br />', '<br/>', '<br>', '<table>', '</table>'],
+            "\r\n", $content);
+        // Avoid lots of spaces
+        $content = preg_replace('/[\r\n]+/', ' ', $content);
+        // Replace links to keep them accessible
+        $content = preg_replace('/<a[\s\S]*href="(.*)"[\s\S]*>(.*)<\/a>/i', '$2 ($1)', $content);
+        // Remove html tags
+        $content = strip_tags($content);
+        // Trim content so that it's nice
+        $content = trim($content);
+        return $content;
+    }
+
+    /**
      * Get last exception
      * 
      * @return Exception
      */
-    public function getLastException() {
+    public function getLastException()
+    {
         return $this->lastException;
     }
 

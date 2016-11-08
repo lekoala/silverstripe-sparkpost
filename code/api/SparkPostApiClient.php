@@ -78,12 +78,20 @@ class SparkPostApiClient
     protected $subaccount;
 
     /**
+     * Client options
+     *
+     * @var array
+     */
+    protected $opts = [];
+
+    /**
      * Create a new instance of the SparkPostApiClient
      *
      * @param string $key Specify the string, or it will read env SPARKPOST_API_KEY or constant SPARKPOST_API_KEY
-     * @param boolean $debug
+     * @param boolean $debug Run in debug mode
+     * @param array $opts Additionnal options to configure the client
      */
-    public function __construct($key = null, $debug = false)
+    public function __construct($key = null, $debug = false, $opts = [])
     {
         if ($key) {
             $this->key = $key;
@@ -94,6 +102,36 @@ class SparkPostApiClient
             }
         }
         $this->debug = $debug;
+
+        $this->opts = array_merge($opts, $this->getDefaultOptions());
+    }
+
+    /**
+     * Get default options
+     * 
+     * @return array
+     */
+    function getDefaultOptions()
+    {
+        return [
+            'connect_timeout' => 10,
+            'timeout' => 10,
+        ];
+    }
+
+    /**
+     * Get an option
+     *
+     * @param string $name
+     * @return mixed
+     */
+    function getOption($name)
+    {
+        if (!isset($this->opts[$name])) {
+            throw new InvalidArgumentException("$name is not a valid option. Valid options are : ".
+            implode(', ', array_keys($this->opts)));
+        }
+        return $this->opts[$name];
     }
 
     /**
@@ -759,6 +797,8 @@ class SparkPostApiClient
             'SparkPostApiClient v'.self::CLIENT_VERSION);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_URL, self::API_ENDPOINT.'/'.$endpoint);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUTTIMEOUT, $this->getOption('connect_timeout'));
+        curl_setopt($ch, CURLOPT_TIMEOUT, $this->getOption('timeout'));
 
         if ($this->debug) {
             curl_setopt($ch, CURLOPT_VERBOSE, true);
@@ -822,13 +862,13 @@ class SparkPostApiClient
                             if (empty($data['recipients'])) {
                                 $message .= ' (empty recipients list)';
                             } else {
-                                if(is_array($data['recipients'])) {
+                                if (is_array($data['recipients'])) {
                                     $addresses = [];
-                                    foreach($data['recipients'] as $recipient) {
+                                    foreach ($data['recipients'] as $recipient) {
                                         $addresses[] = json_encode($recipient['address']);
                                     }
                                 }
-                                $message .= ' (' .implode(',', $addresses) .')';
+                                $message .= ' ('.implode(',', $addresses).')';
                             }
                         } else {
                             $message .= ' (no recipients defined)';
