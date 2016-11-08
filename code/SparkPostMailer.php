@@ -431,7 +431,7 @@ class SparkPostMailer extends Mailer
         // Avoid lots of spaces
         $content = preg_replace('/[\r\n]+/', ' ', $content);
         // Replace links to keep them accessible
-        $content = preg_replace('/<a[\s\S]*href="(.*)"[\s\S]*>(.*)<\/a>/i', '$2 ($1)', $content);
+        $content = preg_replace('/<a[\s\S]*href="(.*?)"[\s\S]*>(.*)<\/a>/i', '$2 ($1)', $content);
         // Remove html tags
         $content = strip_tags($content);
         // Trim content so that it's nice
