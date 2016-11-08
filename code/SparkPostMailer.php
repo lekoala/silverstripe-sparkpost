@@ -414,6 +414,7 @@ class SparkPostMailer extends Mailer
     }
 
     /**
+     * Convert an html email to a text email while keeping formatting and links
      * 
      * @param string $content
      * @return string
@@ -450,6 +451,10 @@ class SparkPostMailer extends Mailer
 
     /**
      * Resolve default send from address
+     *
+     * Keep in mind that an email using send() without a from
+     * will inject the admin_email. Therefore, SiteConfig
+     * will not be used
      *
      * @param string $from
      * @return string
