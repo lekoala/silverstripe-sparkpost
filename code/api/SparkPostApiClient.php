@@ -797,8 +797,8 @@ class SparkPostApiClient
             'SparkPostApiClient v'.self::CLIENT_VERSION);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_URL, self::API_ENDPOINT.'/'.$endpoint);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUTTIMEOUT, $this->getOption('connect_timeout'));
-        curl_setopt($ch, CURLOPT_TIMEOUT, $this->getOption('timeout'));
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, (int) $this->getOption('connect_timeout'));
+        curl_setopt($ch, CURLOPT_TIMEOUT, (int) $this->getOption('timeout'));
 
         if ($this->debug) {
             curl_setopt($ch, CURLOPT_VERBOSE, true);
