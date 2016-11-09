@@ -376,11 +376,11 @@ class SparkPostMailer extends Mailer
                 mkdir($logFolder, 0777, true);
             }
             $filter = new FileNameFilter();
-            $title  = substr($filter->filter($subject), 0, 20);
+            $title  = substr($filter->filter($subject), 0, 35);
 
             $ext = empty($htmlContent) ? 'txt' : 'html';
 
-            $r = file_put_contents($logFolder.'/'.time().'-'.$title.'.'.$ext,
+            $r = file_put_contents($logFolder.'/'.date('Ymd').'_'.$title . '_' .uniqid() .'.'.$ext,
                 $logContent);
 
             if (!$r && Director::isDev()) {
