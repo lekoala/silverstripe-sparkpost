@@ -323,6 +323,18 @@ class SparkPostMailer extends Mailer
             $params['text'] = $plainContent;
         }
         if ($htmlContent) {
+            if (self::config()->inline_styles) {
+                try {
+                    $html = $this->inlineStyles($htmlContent);
+
+                    // Prevent SparkPost from inlining twice
+                    $params['default_params']['inlineCss'] = false;
+                } catch (Exception $ex) {
+                    // If it fails, let SparkPost do the job
+                    $params['default_params']['inlineCss'] = true;
+                }
+            }
+
             $params['html'] = $htmlContent;
         }
 
@@ -408,6 +420,31 @@ class SparkPostMailer extends Mailer
         }
 
         return false;
+    }
+
+    /**
+     * Inline styles using Pelago Emogrifier
+     * 
+     * @param string $html
+     * @return string
+     */
+    protected function inlineStyles($html)
+    {
+        if (!class_exists("\\Pelago\\Emogrifier")) {
+            throw new Exception("You must run composer require pelago/emogrifier");
+        }
+        $emogrifier = new \Pelago\Emogrifier();
+        $emogrifier->setHtml($html);
+        $emogrifier->disableInvisibleNodeRemoval();
+        $emogrifier->enableCssToHtmlMapping();
+        $html       = $emogrifier->emogrify();
+
+        // Ugly hack to avoid gmail reordering your padding
+        $html = str_replace('padding: 0;',
+            'padding-top: 0; padding-bottom: 0; padding-right: 0; padding-left: 0;',
+            $html);
+
+        return $html;
     }
 
     /**

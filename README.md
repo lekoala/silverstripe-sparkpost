@@ -94,6 +94,21 @@ Preventing spam
 - Make sure you have properly configured your SPF and DKIM records for your domain.
 - Create a [DMARC record] (https://www.unlocktheinbox.com/dmarcwizard/)
 - Leave provide_plain option to true or provide plain content for your emails
+- Use [Mail Tester] (http://www.mail-tester.com/) to troubleshoot your issues
+
+Inlining styles
+==================
+
+Although SparkPost can inline styles for you, it may not work properly for complex
+style sheet, such as Foundation Emails. The following config can help you with this
+issue.
+
+   ```yaml
+   SparkPostMailer:
+     inline_styles: true
+   ```
+   
+It require the use of pelago\emogrifier so please install it if you plan to use this option.
 
 Compatibility
 ==================

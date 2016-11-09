@@ -22,6 +22,7 @@ SparkPostMailer:
     transactional: true
     inlineCss: true
   name_fallback: true
+  inline_styles: false
 SparkPostAdmin:
   cache_enabled: true
   inbound_subdomain: 'emails'

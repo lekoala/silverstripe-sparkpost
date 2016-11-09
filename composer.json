@@ -22,6 +22,11 @@
     "extra": {
         "installer-name": "sparkpost"
     },
+    "suggest": {
+        "pelago/emogrifier": "Inline styles for your emails",
+        "lekoala/silverstripe-foundation-emails": "Use Foundation Emails as a base style for your emails",
+        "lekoala/silverstripe-email-templates": "Email templates editables from the cms"
+    },
     "support": {
         "issues": "https://github.com/lekoala/silverstripe-sparkpost/issues"
     }
