@@ -371,16 +371,13 @@ class SparkPostMailer extends Mailer
             $logContent .= '</pre>';
 
             // Store it
-            $logFolder = BASE_PATH.'/'.self::config()->log_folder;
-            if (!is_dir($logFolder)) {
-                mkdir($logFolder, 0777, true);
-            }
-            $filter = new FileNameFilter();
-            $title  = substr($filter->filter($subject), 0, 35);
+            $logFolder = $this->getLogFolder();
+            $filter    = new FileNameFilter();
+            $title     = substr($filter->filter($subject), 0, 35);
 
             $ext = empty($htmlContent) ? 'txt' : 'html';
 
-            $r = file_put_contents($logFolder.'/'.date('Ymd').'_'.$title . '_' .uniqid() .'.'.$ext,
+            $r = file_put_contents($logFolder.'/'.date('Ymd').'_'.$title.'_'.uniqid().'.'.$ext,
                 $logContent);
 
             if (!$r && Director::isDev()) {
@@ -414,6 +411,20 @@ class SparkPostMailer extends Mailer
     }
 
     /**
+     * Get the log folder and create it if necessary
+     * 
+     * @return string
+     */
+    public function getLogFolder()
+    {
+        $logFolder = BASE_PATH.'/'.self::config()->log_folder;
+        if (!is_dir($logFolder)) {
+            mkdir($logFolder, 0777, true);
+        }
+        return $logFolder;
+    }
+
+    /**
      * Convert an html email to a text email while keeping formatting and links
      * 
      * @param string $content
@@ -431,7 +442,8 @@ class SparkPostMailer extends Mailer
         // Avoid lots of spaces
         $content = preg_replace('/[\r\n]+/', ' ', $content);
         // Replace links to keep them accessible
-        $content = preg_replace('/<a[\s\S]*href="(.*?)"[\s\S]*>(.*)<\/a>/i', '$2 ($1)', $content);
+        $content = preg_replace('/<a[\s\S]*href="(.*?)"[\s\S]*>(.*)<\/a>/i',
+            '$2 ($1)', $content);
         // Remove html tags
         $content = strip_tags($content);
         // Trim content so that it's nice
