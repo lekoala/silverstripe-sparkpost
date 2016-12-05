@@ -382,15 +382,28 @@ class SparkPostMailer extends Mailer
             }
             $logContent .= '</pre>';
 
-            // Store it
             $logFolder = $this->getLogFolder();
-            $filter    = new FileNameFilter();
-            $title     = substr($filter->filter($subject), 0, 35);
 
+            // Generate filename
+            $filter  = new FileNameFilter();
+            $title   = substr($filter->filter($subject), 0, 35);
+            $logName = date('Ymd').'_'.$title.'_'.uniqid();
+
+            // Store attachments if any
+            if (!empty($params['attachments'])) {
+                $logContent .= '<hr />';
+                foreach ($params['attachments'] as $attachment) {
+                    file_put_contents($logFolder.'/'.$logName.'_'.$attachment['name'],
+                        base64_decode($attachment['data']));
+
+                    $logContent .= 'File : ' . $attachment['name'] . '<br/>';
+                }
+            }
+
+            // Store it
             $ext = empty($htmlContent) ? 'txt' : 'html';
 
-            $r = file_put_contents($logFolder.'/'.date('Ymd').'_'.$title.'_'.uniqid().'.'.$ext,
-                $logContent);
+            $r = file_put_contents($logFolder.'/'.$logName.'.'.$ext, $logContent);
 
             if (!$r && Director::isDev()) {
                 throw new Exception('Failed to store email in '.$logFolder);
