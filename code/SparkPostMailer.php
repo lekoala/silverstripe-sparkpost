@@ -469,7 +469,7 @@ class SparkPostMailer extends Mailer
     {
         $logFolder = BASE_PATH.'/'.self::config()->log_folder;
         if (!is_dir($logFolder)) {
-            mkdir($logFolder, 0777, true);
+            mkdir($logFolder, 0755, true);
         }
         return $logFolder;
     }
