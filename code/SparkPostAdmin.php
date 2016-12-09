@@ -20,6 +20,8 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     private static $url_rule        = '/$Action/$ID/$OtherID';
     private static $allowed_actions = [
         'settings',
+        'SearchForm',
+        'doSearch',
         "doInstallHook",
         "doUninstallHook",
         "doInstallDomain",
@@ -136,7 +138,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
 
         // Create tabs
         $messagesTab = new Tab('Messages',
-            _t('SparkPostAdmin.Messages', 'Messages'),
+            _t('SparkPostAdmin.Messages', 'Messages'), $this->SearchFields(),
             $messagesList,
             // necessary for tree node selection in LeftAndMain.EditForm.js
             new HiddenField('ID', false, 0)
@@ -215,11 +217,119 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     public function getParams()
     {
         $params = $this->config()->default_search_params;
-        $data   = $this->getRequest()->postVars();
-        if (isset($data['SecurityID'])) {
-            unset($data['SecurityID']);
+        $data   = Session::get(__CLASS__.'.Search');
+        if (!$data) {
+            $data = [];
         }
-        return array_merge($params, $data);
+
+        $params = array_merge($params, $data);
+
+        // Respect api formats
+        if (!empty($params['to'])) {
+            $params['to'] = date('Y-m-d', strtotime($params['to'])).'T00:00';
+        }
+        if (!empty($params['from'])) {
+            $params['from'] = date('Y-m-d', strtotime($params['from'])).'T23:59';
+        }
+
+        $params = array_filter($params);
+
+        return $params;
+    }
+
+    public function getParam($name, $default = null)
+    {
+        $data = Session::get(__CLASS__.'.Search');
+        if (!$data) {
+            return $default;
+        }
+        return (isset($data[$name]) && strlen($data[$name])) ? $data[$name] : $default;
+    }
+
+    public function SearchFields()
+    {
+        $disabled_filters = $this->config()->disabled_search_filters;
+        if (!$disabled_filters) {
+            $disabled_filters = [];
+        }
+
+        $fields = new CompositeField();
+        $fields->push($from   = new DateField('params[from]',
+            _t('SparkPostAdmin.DATEFROM', 'From'), $this->getParam('from')));
+        $from->setDescription(_t('SparkPostAdmin.DATEFROMDESC',
+                'Maximum -10 days'));
+
+        $fields->push(new DateField('params[to]',
+            _t('SparkPostAdmin.DATETO', 'To'), $to = $this->getParam('to')));
+
+        if (!in_array('friendly_froms', $disabled_filters)) {
+            $fields->push($friendly_froms = new TextField('params[friendly_froms]',
+                _t('SparkPostAdmin.FRIENDLYFROM', 'Sender'),
+                $this->getParam('friendly_froms')));
+            $friendly_froms->setAttribute('placeholder',
+                'sender@mail.example.com,other@exemple.com');
+        }
+
+        if (!SparkPostMailer::config()->subaccount_id && !in_array('subaccounts',
+                $disabled_filters)) {
+            $fields->push($subaccounts = new TextField('params[subaccounts]',
+                _t('SparkPostAdmin.SUBACCOUNTS', 'Subaccounts'),
+                $this->getParam('subaccounts')));
+            $subaccounts->setAttribute('placeholder', '101,102');
+        }
+
+        $fields->push(new DropdownField('params[per_page]',
+            _t('SparkPostAdmin.PERPAGE', 'Number of results'),
+            array(
+            100 => 100,
+            500 => 500,
+            1000 => 1000,
+            10000 => 10000,
+            ), $this->getParam('per_page', 100)));
+
+        foreach ($fields->FieldList() as $field) {
+            $field->addExtraClass('no-change-track');
+        }
+
+        // This is a ugly hack to allow embedding a form into another form
+        $fields->push($doSearch = new FormAction('doSearch',
+            _t('SparkPostAdmin.DOSEARCH', 'Search')));
+        $doSearch->setAttribute('onclick',
+            "jQuery('#Form_SearchForm').append(jQuery('#Form_EditForm input,#Form_EditForm select').clone()).submit();");
+
+        return $fields;
+    }
+
+    public function SearchForm()
+    {
+        $SearchForm = new Form($this, 'SearchForm', new FieldList(),
+            new FieldList(new FormAction('doSearch')));
+        $SearchForm->setAttribute('style', 'display:none');
+        return $SearchForm;
+    }
+
+    public function doSearch($data, Form $form)
+    {
+        $post = $this->getRequest()->postVar('params');
+        if (!$post) {
+            return $this->redirectBack();
+        }
+        $params = [];
+
+        $validFields = [];
+        foreach ($this->SearchFields()->FieldList()->dataFields() as $field) {
+            $validFields[] = str_replace(['params[', ']'], '', $field->getName());
+        }
+
+        foreach ($post as $k => $v) {
+            if (in_array($k, $validFields)) {
+                $params[$k] = $v;
+            }
+        }
+
+        Session::set(__CLASS__.'.Search', $params);
+        Session::save();
+        return $this->redirectBack();
     }
 
     /**

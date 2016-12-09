@@ -29,3 +29,4 @@ SparkPostAdmin:
   webhook_url: ''
   sending_domain: ''
   default_search_params: []
+  disabled_search_filters: []

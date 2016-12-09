@@ -361,20 +361,22 @@ class SparkPostApiClient
      *
      * Use the following parameters (default is current timezone, 100 messages for the last 7 days)
      *
-     * 'bounce_classes' : Comma-delimited list of bounce classification codes to search.
-     * 'campaign_ids' : Comma-delimited list of campaign ID's to search (i.e. campaign_id used during creation of a transmission).
-     * 'events' : Comma-delimited list of event types to search.  Example: delivery, injection, bounce, delay, policy_rejection, out_of_band, open, click, ...
-     * 'friendly_froms' : Comma-delimited list of friendly_froms to search.
+     * 'bounce_classes' : delimited list of bounce classification codes to search.
+     * 'campaign_ids' : delimited list of campaign ID's to search (i.e. campaign_id used during creation of a transmission).
+     * 'delimiter' : Specifies the delimiter for query parameter lists
+     * 'events' : delimited list of event types to search.  Example: delivery, injection, bounce, delay, policy_rejection, out_of_band, open, click, ...
+     * 'friendly_froms' : delimited list of friendly_froms to search.
      * 'from' : Datetime in format of YYYY-MM-DDTHH:MM.
-     * 'message_ids' : Comma-delimited list of message ID's to search.
+     * 'message_ids' : delimited list of message ID's to search.
      * 'page' : The results page number to return. Used with per_page for paging through results
      * 'per_page' : Number of results to return per page. Must be between 1 and 10,000 (inclusive).
      * 'reason' : Bounce/failure/rejection reason that will be matched using a wildcard (e.g., %reason%)
-     * 'recipients' : Comma-delimited list of recipients to search.
-     * 'template_ids' : Comma-delimited list of template ID's to search.
+     * 'recipients' : delimited list of recipients to search.
+     * 'subaccounts' : 	delimited list of subaccount ID’s to search..
+     * 'template_ids' : delimited list of template ID's to search.
      * 'timezone' : Standard timezone identification string
      * 'to' : Datetime in format of YYYY-MM-DDTHH:MM
-     * 'transmission_ids' : Comma-delimited list of transmission ID's to search (i.e. id generated during creation of a transmission).
+     * 'transmission_ids' : delimited list of transmission ID's to search (i.e. id generated during creation of a transmission).
      *
      * Result is an array that looks like this
      *
