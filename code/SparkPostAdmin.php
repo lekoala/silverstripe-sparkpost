@@ -212,6 +212,16 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         return $v;
     }
 
+    public function getParams()
+    {
+        $params = $this->config()->default_search_params;
+        $data   = $this->getRequest()->postVars();
+        if (isset($data['SecurityID'])) {
+            unset($data['SecurityID']);
+        }
+        return array_merge($params, $data);
+    }
+
     /**
      * List of messages events
      *
@@ -221,21 +231,17 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
      */
     public function Messages()
     {
-        $data = $this->getRequest()->postVars();
-        if (isset($data['SecurityID'])) {
-            unset($data['SecurityID']);
-        }
+        $params = $this->getParams();
+
         $cache_enabled = $this->getCacheEnabled();
         if ($cache_enabled) {
             $cache        = $this->getCache();
-            $cache_key    = md5(serialize($data));
+            $cache_key    = md5(serialize($params));
             $cache_result = $cache->load($cache_key);
         }
         if ($cache_enabled && $cache_result) {
             $messages = unserialize($cache_result);
         } else {
-            $params = [];
-
             try {
                 $messages = $this->getClient()->searchMessageEvents($params);
             } catch (Exception $ex) {

@@ -28,3 +28,4 @@ SparkPostAdmin:
   inbound_subdomain: 'emails'
   webhook_url: ''
   sending_domain: ''
+  default_search_params: []
