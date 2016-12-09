@@ -226,10 +226,10 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
 
         // Respect api formats
         if (!empty($params['to'])) {
-            $params['to'] = date('Y-m-d', strtotime($params['to'])).'T00:00';
+            $params['to'] = date('Y-m-d', strtotime(str_replace('/','-',$params['to']))).'T00:00';
         }
         if (!empty($params['from'])) {
-            $params['from'] = date('Y-m-d', strtotime($params['from'])).'T23:59';
+            $params['from'] = date('Y-m-d', strtotime(str_replace('/','-',$params['from']))).'T23:59';
         }
 
         $params = array_filter($params);
@@ -256,8 +256,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         $fields = new CompositeField();
         $fields->push($from   = new DateField('params[from]',
             _t('SparkPostAdmin.DATEFROM', 'From'), $this->getParam('from')));
-        $from->setDescription(_t('SparkPostAdmin.DATEFROMDESC',
-                'Maximum -10 days'));
+        $from->setConfig('min', date('Y-m-d',strtotime('-10 days')));
 
         $fields->push(new DateField('params[to]',
             _t('SparkPostAdmin.DATETO', 'To'), $to = $this->getParam('to')));
