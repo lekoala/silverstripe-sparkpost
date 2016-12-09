@@ -452,11 +452,6 @@ class SparkPostMailer extends Mailer
         $emogrifier->enableCssToHtmlMapping();
         $html       = $emogrifier->emogrify();
 
-        // Ugly hack to avoid gmail reordering your padding
-//        $html = str_replace('padding: 0;',
-//            'padding-top: 0; padding-bottom: 0; padding-right: 0; padding-left: 0;',
-//            $html);
-
         return $html;
     }
 
