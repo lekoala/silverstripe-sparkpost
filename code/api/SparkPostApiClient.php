@@ -281,7 +281,7 @@ class SparkPostApiClient
      * @param array $data
      * @return array
      */
-    public function createTransmissions($data)
+    public function createTransmission($data)
     {
         // Use the same mapping as official sdk
         $mapping = [

@@ -419,7 +419,7 @@ class SparkPostMailer extends Mailer
         $logLevel = self::config()->log_level ? self::config()->log_level : 7;
 
         try {
-            $result = $this->getClient()->createTransmissions($params);
+            $result = $this->getClient()->createTransmission($params);
 
             if (!empty($result['total_accepted_recipients'])) {
                 return [$original_to, $subject, $htmlContent, $customheaders];
