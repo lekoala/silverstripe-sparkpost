@@ -4,6 +4,7 @@
  * Provide extensions points for handling the webhook
  *
  * @author LeKoala <thomas@lekoala.be>
+ * @mixin InvoiceWebhookExtension
  */
 class SparkPostController extends Controller
 {
@@ -105,23 +106,28 @@ class SparkPostController extends Controller
             $type = key($ev);
             $data = $ev[$type];
 
-            $this->extend('onAnyEvent', $ev);
+            $this->extend('onAnyEvent', $data, $type);
 
             switch ($type) {
+                //Click, Open
                 case SparkPostApiClient::TYPE_ENGAGEMENT:
-                    $this->extend('onEngagementEvent', $ev);
+                    $this->extend('onEngagementEvent', $data, $type);
                     break;
+                //Generation Failure, Generation Rejection
                 case SparkPostApiClient::TYPE_GENERATION:
-                    $this->extend('onGenerationEvent', $ev);
+                    $this->extend('onGenerationEvent', $data, $type);
                     break;
+                //Bounce, Delivery, Injection, SMS Status, Spam Complaint, Out of Band, Policy Rejection, Delay
                 case SparkPostApiClient::TYPE_MESSAGE:
-                    $this->extend('onMessageEvent', $ev);
+                    $this->extend('onMessageEvent', $data, $type);
                     break;
+                //Relay Injection, Relay Rejection, Relay Delivery, Relay Temporary Failure, Relay Permanent Failure
                 case SparkPostApiClient::TYPE_RELAY:
-                    $this->extend('onRelayEvent', $ev);
+                    $this->extend('onRelayEvent', $data, $type);
                     break;
+                //List Unsubscribe, Link Unsubscribe
                 case SparkPostApiClient::TYPE_UNSUBSCRIBE:
-                    $this->extend('onUnsubscribeEvent', $ev);
+                    $this->extend('onUnsubscribeEvent', $data, $type);
                     break;
             }
         }

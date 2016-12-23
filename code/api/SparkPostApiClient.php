@@ -16,11 +16,11 @@ class SparkPostApiClient
     const METHOD_DELETE          = "DELETE";
     const DATETIME_FORMAT        = 'Y-m-d\TH:i';
     // SPARKPOST TYPES
-    const TYPE_MESSAGE           = 'message_event';
-    const TYPE_ENGAGEMENT        = 'track_event';
-    const TYPE_GENERATION        = 'gen_event';
-    const TYPE_UNSUBSCRIBE       = 'unsubscribe_event';
-    const TYPE_RELAY             = 'relay_event';
+    const TYPE_MESSAGE           = 'message_event'; // Bounce, Delivery, Injection, SMS Status, Spam Complaint, Out of Band, Policy Rejection, Delay
+    const TYPE_ENGAGEMENT        = 'track_event'; // Click, Open
+    const TYPE_GENERATION        = 'gen_event'; // Generation Failure, Generation Rejection
+    const TYPE_UNSUBSCRIBE       = 'unsubscribe_event'; // List Unsubscribe, Link Unsubscribe
+    const TYPE_RELAY             = 'relay_event'; // Relay Injection, Relay Rejection, Relay Delivery, Relay Temporary Failure, Relay Permanent Failure
     // SPARKPOST EVENTS
     const EVENT_DELIVERY         = 'delivery';
     const EVENT_BOUNCE           = 'bounce';
