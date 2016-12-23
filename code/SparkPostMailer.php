@@ -361,6 +361,23 @@ class SparkPostMailer extends Mailer
             unset($customheaders['Reply-To']);
         }
 
+        // Handle other custom headers
+        if (isset($customheaders['Metadata'])) {
+            if (!is_array($customheaders['Metadata'])) {
+                throw new Exception("Metadata parameter must be an associative array");
+            }
+            $params['metadata'] = $customheaders['Metadata'];
+            unset($customheaders['Metadata']);
+        }
+        if (isset($customheaders['Campaign'])) {
+            $params['campaign'] = $customheaders['Campaign'];
+            unset($customheaders['Campaign']);
+        }
+        if (isset($customheaders['Description'])) {
+            $params['description'] = $customheaders['Description'];
+            unset($customheaders['Description']);
+        }
+
 
         if ($customheaders) {
             $params['customHeaders'] = $customheaders;
@@ -396,7 +413,7 @@ class SparkPostMailer extends Mailer
                     file_put_contents($logFolder.'/'.$logName.'_'.$attachment['name'],
                         base64_decode($attachment['data']));
 
-                    $logContent .= 'File : ' . $attachment['name'] . '<br/>';
+                    $logContent .= 'File : '.$attachment['name'].'<br/>';
                 }
             }
 
@@ -422,7 +439,7 @@ class SparkPostMailer extends Mailer
             $result = $this->getClient()->createTransmission($params);
 
             if (!empty($result['total_accepted_recipients'])) {
-                return [$original_to, $subject, $htmlContent, $customheaders];
+                return [$original_to, $subject, $htmlContent, $customheaders, $result];
             }
 
             SS_Log::log("No recipient was accepted for transmission ".$result['id'],

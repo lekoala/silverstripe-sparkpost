@@ -1,6 +1,6 @@
 SilverStripe SparkPost module
 ==================
-Use SparkPost in SilverStripe
+Use SparkPost in SilverStripe.
 
 Define in your _ss_environment.php file the following constant
 
@@ -23,6 +23,32 @@ You can also autoconfigure the module with the following constants in your _ss_e
 	define('SPARKPOST_SENDING_DISABLED',true); // Will disable sending (useful in development)
 
 By defining the Api Key, the module will register a new mailer that will be used to send all emails.
+
+Regiter the new mailer
+==================
+
+If you define the SPARKPOST_API_KEY constant, the mailer will be automatically registered.
+
+Otherwise, you need to call the following line:
+
+    ```php
+    SparkPostMailer::setAsMailer();
+    ```
+    
+One small difference from the original mailer is that it will return a fifth argument
+for successful emails with the result of the call to the SparkPost api.
+
+Using custom headers
+==================
+
+You can pass custom headers to the api by specifying any number of additionnal arguments
+in X-SparkPostMailer custom header.
+
+As a convenience, you can also directly use the following custom headers : Campaign, Metadata, Description.
+
+    ```php
+    $email->addCustomHeader('Metadata', ['ID' => $this->ID]);
+    ```
 
 Subaccounts support
 ==================
