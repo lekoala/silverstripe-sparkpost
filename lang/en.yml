@@ -2,20 +2,20 @@ en:
   SparkPostAdmin:
     ACCESS: 'Access to ''{title}'' section'
     ACCESS_HELP: 'Allow use of SparkPost admin section'
-    DOINSTALLDOMAIN: 'Install domain'
-    DOINSTALLHOOK: 'Install hook'
-    DOUNINSTALLDOMAIN: 'Uninstall domain'
-    DOUNINSTALLHOOK: 'Uninstall hook'
-    DomainInstalled: 'Domain {domain} is installed.'
-    DomainInstalledBut: 'Domain {domain} is installed, but is not properly configured. SPF records : {spf}. Domain key (DKIM) : {dkim}. Please check your dns zone.'
-    DomainNotInstalled: 'Sending domain {domain} is not installed.</div>'
+    DOINSTALLDOMAIN: 'Install sending domain'
+    DOINSTALL_WEBHOOK: 'Install webhook'
+    DOUNINSTALLDOMAIN: 'Uninstall sending domain'
+    DOUNINSTALL_WEBHOOK: 'Uninstall webhook'
+    DomainInstalled: 'Default sending domain {domain} is installed.'
+    DomainInstalledBut: 'Default sending domain {domain} is installed, but is not properly configured. SPF records : {spf}. Domain key (DKIM) : {dkim}. Please check your dns zone.'
+    DomainNotInstalled: 'Default sending domain {domain} is not installed.'
     EventDate: Date
     EventRecipient: Recipient
     EventSender: Sender
     EventSubject: Subject
     EventType: Type
-    HookInstalled: 'Hook is installed. Url of the webhook is: {url}.'
-    HookNotInstalled: 'Hook is not installed. Url of the webhook is: {url}. This url must be publicly visible to be used as a hook.'
+    WebhookInstalled: 'Webhook is installed and accessible at the following url {url}.'
+    WebhookNotInstalled: 'Webhook is not installed. It should be configured using the following url {url}.'
     MENUTITLE: SparkPost
     Messages: Messages
     Settings: Settings

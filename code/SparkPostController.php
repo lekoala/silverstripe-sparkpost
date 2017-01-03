@@ -36,6 +36,8 @@ class SparkPostController extends Controller
     }
 
     /**
+     * You can also see /resources/sample.json
+     * 
      * @param SS_HTTPRequest $req
      */
     public function test(SS_HTTPRequest $req)
@@ -65,6 +67,9 @@ class SparkPostController extends Controller
         // Each webhook batch contains the header X-MessageSystems-Batch-ID,
         // which is useful for auditing and prevention of processing duplicate batches.
         $batchId = $req->getHeader('X-MessageSystems-Batch-ID');
+        if (!$batchId) {
+            $batchId = time();
+        }
 
         $json = file_get_contents('php://input');
 
@@ -79,11 +84,29 @@ class SparkPostController extends Controller
 
         $payload = json_decode($json, JSON_OBJECT_AS_ARRAY);
 
+        if (defined('SPARKPOST_WEBHOOK_LOG_DIR')) {
+            $dir = rtrim(Director::baseFolder(), '/') . '/' . rtrim(SPARKPOST_WEBHOOK_LOG_DIR, '/');
+
+            if (!is_dir($dir) && Director::isDev()) {
+                mkdir($dir, 0755, true);
+            }
+
+            if (is_dir($dir)) {
+                $payload['@headers'] = $req->getHeaders();
+                $prettyPayload = json_encode($payload, JSON_PRETTY_PRINT);
+                file_put_contents($dir . '/' . $batchId . '.json', $prettyPayload);
+            } else {
+                SS_Log::log("Directory $dir does not exist", SS_Log::DEBUG);
+            }
+        }
+
         try {
             $this->processPayload($payload, $batchId);
         } catch (Exception $ex) {
             // Maybe processing payload will create exceptions, but we
             // catch them to send a proper response to the API
+            $logLevel = self::config()->log_level ? self::config()->log_level : 7;
+            SS_Log::log($ex->getMessage(), $logLevel);
         }
 
         $response->setBody('OK');
@@ -101,11 +124,18 @@ class SparkPostController extends Controller
     {
         $this->extend('beforeProcessPayload', $payload, $batchId);
 
+        $subaccount = defined('SPARKPOST_SUBACCOUNT_ID') ? SPARKPOST_SUBACCOUNT_ID : null;
+
         foreach ($payload as $r) {
             $ev = $r['msys'];
 
             $type = key($ev);
             $data = $ev[$type];
+
+            // Ignore events not related to the subaccount we are managing
+            if (!empty($data['subaccount_id']) && $subaccount && $subaccount != $data['subaccount_id']) {
+                continue;
+            }
 
             $this->extend('onAnyEvent', $data, $type);
 

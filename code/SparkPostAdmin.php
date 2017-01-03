@@ -31,6 +31,11 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     private static $cache_enabled = true;
 
     /**
+     * @var bool
+     */
+    protected $subaccountKey = false;
+
+    /**
      * @var ViewableData
      */
     protected $currentMessage;
@@ -92,7 +97,6 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         }
 
         // Build gridfield
-
         $messageListConfig = GridFieldConfig::create()->addComponents(
             new GridFieldSortableHeader(), new GridFieldDataColumns(), new GridFieldFooter()
         );
@@ -149,11 +153,21 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
 
             $settingsTab = new Tab('Settings', _t('SparkPostAdmin.Settings', 'Settings'));
 
-            $webhookTabData = $this->WebhookTab();
-            $settingsTab->push($webhookTabData);
-
             $domainTabData = $this->DomainTab();
             $settingsTab->push($domainTabData);
+
+            // Show webhook options if not using a subaccount key
+            if (!$this->subaccountKey) {
+                $webhookTabData = $this->WebhookTab();
+                $settingsTab->push($webhookTabData);
+            }
+
+            // Add a refresh button
+            $refreshButton = new LiteralField('RefreshButton', '<br/>' . $this->ButtonHelper(
+                    $this->Link() . '?refresh=true', _t('SparkPostAdmin.REFRESH', 'Force data refresh from the API')
+                )
+            );
+            $settingsTab->push($refreshButton);
 
             $fields->addFieldToTab('Root', $settingsTab);
         }
@@ -400,6 +414,36 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     }
 
     /**
+     * Message helper
+     *
+     * @param string $message
+     * @param string $status
+     * @return string
+     */
+    protected function MessageHelper($message, $status = 'info')
+    {
+        return '<div class="message ' . $status . '">' . $message . '</div>';
+    }
+
+    /**
+     * Button helper
+     *
+     * @param string $link
+     * @param string $text
+     * @param boolean $confirm
+     * @return string
+     */
+    protected function ButtonHelper($link, $text, $confirm = false)
+    {
+        $link = '<a class="ss-ui-button" href="' . $link . '"';
+        if ($confirm) {
+            $link .= ' onclick="return confirm(\'' . _t('SparkPostAdmin.CONFIRM_MSG', 'Are you sure?') . '\')"';
+        }
+        $link .= '>' . $text . '</a>';
+        return $link;
+    }
+
+    /**
      * A template accessor to check the ADMIN permission
      *
      * @return bool
@@ -502,13 +546,14 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
      */
     public function WebhookUrl()
     {
-        if (self::config()->webhook_url) {
-            return rtrim(self::config()->webhook_url, '/') . '/sparkpost/incoming';
+        if (self::config()->webhook_base_url) {
+            return rtrim(self::config()->webhook_base_url, '/') . '/sparkpost/incoming';
         }
         if (Director::isLive()) {
             return Director::absoluteURL('/sparkpost/incoming');
         }
-        return 'http://' . $this->getDomain() . '/sparkpost/incoming';
+        $protocol = Director::protocol();
+        return $protocol . $this->getDomain() . '/sparkpost/incoming';
     }
 
     /**
@@ -519,8 +564,14 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     public function InstallHookForm()
     {
         $fields = new CompositeField();
-        $fields->push(new LiteralField('Info', '<div class="message bad">' . _t('SparkPostAdmin.HookNotInstalled', 'Hook is not installed. Url of the webhook is: {url}. This url must be publicly visible to be used as a hook.', ['url' => $this->WebhookUrl()]) . '</div>'));
-        $fields->push(new LiteralField('doInstallHook', '<a class="ss-ui-button" href="' . $this->Link('doInstallHook') . '">' . _t('SparkPostAdmin.DOINSTALLHOOK', 'Install hook') . '</a>'));
+        $fields->push(new LiteralField('Info', $this->MessageHelper(
+                _t('SparkPostAdmin.WebhookNotInstalled', 'Webhook is not installed. It should be configured using the following url {url}. This url must be publicly visible to be used as a hook.', ['url' => $this->WebhookUrl()]), 'bad'
+            )
+        ));
+        $fields->push(new LiteralField('doInstallHook', '<br/>' . $this->ButtonHelper(
+                $this->Link('doInstallHook'), _t('SparkPostAdmin.DOINSTALL_WEBHOOK', 'Install webhook')
+            )
+        ));
         return $fields;
     }
 
@@ -557,8 +608,14 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     public function UninstallHookForm()
     {
         $fields = new CompositeField();
-        $fields->push(new LiteralField('Info', '<div class="message good">' . _t('SparkPostAdmin.HookInstalled', 'Hook is installed. Url of the webhook is: {url}.', ['url' => $this->WebhookUrl()]) . '</div>'));
-        $fields->push(new LiteralField('doUninstallHook', '<a class="ss-ui-button" href="' . $this->Link('doUninstallHook') . '">' . _t('SparkPostAdmin.DOUNINSTALLHOOK', 'Uninstall hook') . '</a>'));
+        $fields->push(new LiteralField('Info', $this->MessageHelper(
+                _t('SparkPostAdmin.WebhookInstalled', 'Webhook is installed and accessible at the following url {url}.', ['url' => $this->WebhookUrl()]), 'good'
+            )
+        ));
+        $fields->push(new LiteralField('doUninstallHook', '<br/>' . $this->ButtonHelper(
+                $this->Link('doUninstallHook'), _t('SparkPostAdmin.DOUNINSTALL_WEBHOOK', 'Uninstall webhook'), true)
+            )
+        );
         return $fields;
     }
 
@@ -662,10 +719,47 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
      */
     public function DomainTab()
     {
-        if ($this->SendingDomainInstalled()) {
-            return $this->UninstallDomainForm();
+        $defaultDomain = $this->getDomain();
+        $defaultDomainInfos = null;
+        $domains = $this->getClient()->listAllSendingDomains();
+
+        $fields = new CompositeField();
+
+        $list = new ArrayList();
+        foreach ($domains as $domain) {
+            // We are using a subaccount api key
+            if (!isset($domain['shared_with_subaccounts'])) {
+                $this->subaccountKey = true;
+            }
+
+            $list->push(new ArrayData([
+                'Domain' => $domain['domain'],
+                'SPF' => $domain['status']['spf_status'],
+                'DKIM' => $domain['status']['dkim_status'],
+                'Compliance' => $domain['status']['compliance_status'],
+                'Verified' => $domain['status']['ownership_verified'],
+            ]));
+
+            if ($domain['domain'] == $defaultDomain) {
+                $defaultDomainInfos = $domain;
+            }
         }
-        return $this->InstallDomainForm();
+
+        $config = GridFieldConfig::create();
+        $config->addComponent(new GridFieldToolbarHeader());
+        $config->addComponent(new GridFieldTitleHeader());
+        $config->addComponent($columns = new GridFieldDataColumns());
+        $columns->setDisplayFields(ArrayLib::valuekey(['Domain', 'SPF', 'DKIM', 'Compliance', 'Verified']));
+        $domainsList = new GridField('SendingDomains', _t('SparkPostAdmin.ALL_SENDING_DOMAINS', 'Configured sending domains'), $list, $config);
+        $fields->push($domainsList);
+
+        if (!$defaultDomainInfos) {
+            $this->InstallDomainForm($fields);
+        } else {
+            $this->UninstallDomainForm($fields);
+        }
+
+        return $fields;
     }
 
     /**
@@ -720,12 +814,6 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
      */
     public function getDomain()
     {
-        if (self::config()->sending_domain) {
-            return self::config()->sending_domain;
-        }
-        if (Director::isLive()) {
-            return $this->getDomainFromHost();
-        }
         $domain = $this->getDomainFromEmail();
         if (!$domain) {
             return $this->getDomainFromHost();
@@ -736,16 +824,21 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     /**
      * Install domain form
      *
+     * @param CompositeField $fieldsd
      * @return FormField
      */
-    public function InstallDomainForm()
+    public function InstallDomainForm(CompositeField $fields)
     {
         $host = $this->getDomain();
 
-        $fields = new CompositeField();
-        $fields->push(new LiteralField('Info', '<div class="message bad">' . _t('SparkPostAdmin.DomainNotInstalled', 'Sending domain {domain} is not installed.' . '</div>', ['domain' => $host])));
-        $fields->push(new LiteralField('doInstallDomain', '<a class="ss-ui-button" href="' . $this->Link('doInstallDomain') . '">' . _t('SparkPostAdmin.DOINSTALLDOMAIN', 'Install domain') . '</a>'));
-        return $fields;
+        $fields->push(new LiteralField('Info', $this->MessageHelper(
+                _t('SparkPostAdmin.DomainNotInstalled', 'Default sending domain {domain} is not installed.', ['domain' => $host]), "bad")
+            )
+        );
+        $fields->push(new LiteralField('doInstallDomain', '<br/>' . $this->ButtonHelper(
+                $this->Link('doInstallDomain'), _t('SparkPostAdmin.DOINSTALLDOMAIN', 'Install domain'))
+            )
+        );
     }
 
     public function doInstallDomain()
@@ -776,9 +869,10 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     /**
      * Uninstall domain form
      *
+     * @param CompositeField $fieldsd
      * @return FormField
      */
-    public function UninstallDomainForm()
+    public function UninstallDomainForm(CompositeField $fields)
     {
         $verified = $this->SendingDomainVerified();
 
@@ -795,16 +889,22 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
 
         $domain = $this->getDomain();
 
-        $fields = new CompositeField();
-
         if ($spfVerified && $dkimVerified) {
-            $fields->push(new LiteralField('Info', '<div class="message good">' . _t('SparkPostAdmin.DomainInstalled', 'Domain {domain} is installed.', ['domain' => $domain]) . '</div>'));
+            $fields->push(new LiteralField('Info', $this->MessageHelper(
+                    _t('SparkPostAdmin.DomainInstalled', 'Default domain {domain} is installed.', ['domain' => $domain]), 'good')
+                )
+            );
         } else {
-            $fields->push(new LiteralField('Info', '<div class="message warning">' . _t('SparkPostAdmin.DomainInstalledBut', 'Domain {domain} is installed, but is not properly configured. SPF records : {spf}. Domain key (DKIM) : {dkim}. Please check your dns zone.', ['domain' => $domain, 'spf' => $spfVerified ? 'OK' : 'NOT OK',
-                    'dkim' => $dkimVerified ? 'OK' : 'NOT OK']) . '</div>'));
+            $fields->push(new LiteralField('Info', $this->MessageHelper(
+                    _t('SparkPostAdmin.DomainInstalledBut', 'Default domain {domain} is installed, but is not properly configured. SPF records : {spf}. Domain key (DKIM) : {dkim}. Please check your dns zone.', ['domain' => $domain, 'spf' => $spfVerified ? 'OK' : 'NOT OK',
+                    'dkim' => $dkimVerified ? 'OK' : 'NOT OK']), 'warning')
+                )
+            );
         }
-        $fields->push(new LiteralField('doUninstallHook', '<a class="ss-ui-button" href="' . $this->Link('doUninstallHook') . '">' . _t('SparkPostAdmin.DOUNINSTALLDOMAIN', 'Uninstall domain') . '</a>'));
-        return $fields;
+        $fields->push(new LiteralField('doUninstallHook', '<br/>' . $this->ButtonHelper(
+                $this->Link('doUninstallHook'), _t('SparkPostAdmin.DOUNINSTALLDOMAIN', 'Uninstall domain'), true)
+            )
+        );
     }
 
     public function doUninstallDomain($data, Form $form)

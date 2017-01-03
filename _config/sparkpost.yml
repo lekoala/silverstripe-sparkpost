@@ -6,13 +6,15 @@ After:
 Director:
   rules:
     'sparkpost//$Action/$ID/$Name': 'SparkPostController'
+SparkPostController:
+  log_level : 4
 SparkPostMailer:
   api_key: ''
   subaccount_id: ''
   disable_sending : false
   enable_logging : false
   log_folder : 'silverstripe-cache/emails'
-  log_level : 4 
+  log_level : 4
   siteconfig_from: 'DefaultFromEmail'
   siteconfig_to: 'ContactEmail'
   provide_plain: true
@@ -26,7 +28,7 @@ SparkPostMailer:
 SparkPostAdmin:
   cache_enabled: true
   inbound_subdomain: 'emails'
-  webhook_url: ''
-  sending_domain: ''
+  # Defaults to current url or default domain based on default sender
+  webhook_base_url: ''
   default_search_params: []
   disabled_search_filters: []

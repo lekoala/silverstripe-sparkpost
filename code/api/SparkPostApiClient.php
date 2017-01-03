@@ -51,11 +51,11 @@ class SparkPostApiClient
     protected $key;
 
     /**
-     * Debug mode enabled
+     * Curl verbose log
      *
-     * @var boolean
+     * @var string
      */
-    protected $debug = false;
+    protected $verboseLog;
 
     /**
      * A callback to log results
@@ -83,16 +83,16 @@ class SparkPostApiClient
      *
      * @var array
      */
-    protected $opts = [];
+    protected $curlOpts = [];
 
     /**
      * Create a new instance of the SparkPostApiClient
      *
      * @param string $key Specify the string, or it will read env SPARKPOST_API_KEY or constant SPARKPOST_API_KEY
-     * @param boolean $debug Run in debug mode
-     * @param array $opts Additionnal options to configure the client
+     * @param int $subaccount Specify a subaccount to limit data sent by the API
+     * @param array $curlOpts Additionnal options to configure the curl client
      */
-    public function __construct($key = null, $debug = false, $opts = [])
+    public function __construct($key = null, $subaccount = null, $curlOpts = [])
     {
         if ($key) {
             $this->key = $key;
@@ -102,9 +102,8 @@ class SparkPostApiClient
                 $this->key = SPARKPOST_API_KEY;
             }
         }
-        $this->debug = $debug;
-
-        $this->opts = array_merge($opts, $this->getDefaultOptions());
+        $this->subaccount = $subaccount;
+        $this->curlOpts = array_merge($curlOpts, $this->getDefaultCurlOptions());
     }
 
     /**
@@ -112,11 +111,12 @@ class SparkPostApiClient
      *
      * @return array
      */
-    function getDefaultOptions()
+    public function getDefaultCurlOptions()
     {
         return [
             'connect_timeout' => 10,
             'timeout' => 10,
+            'verbose' => false,
         ];
     }
 
@@ -126,13 +126,24 @@ class SparkPostApiClient
      * @param string $name
      * @return mixed
      */
-    function getOption($name)
+    public function getCurlOption($name)
     {
-        if (!isset($this->opts[$name])) {
+        if (!isset($this->curlOpts[$name])) {
             throw new InvalidArgumentException("$name is not a valid option. Valid options are : " .
-            implode(', ', array_keys($this->opts)));
+            implode(', ', array_keys($this->curlOpts)));
         }
-        return $this->opts[$name];
+        return $this->curlOpts[$name];
+    }
+
+    /**
+     * Set an option
+     *
+     * @param string $name
+     * @return mixed
+     */
+    public function setCurlOption($name, $value)
+    {
+        $this->curlOpts[$name] = $value;
     }
 
     /**
@@ -140,7 +151,7 @@ class SparkPostApiClient
      *
      * @return string
      */
-    function getKey()
+    public function getKey()
     {
         return $this->key;
     }
@@ -150,29 +161,19 @@ class SparkPostApiClient
      *
      * @param string $key
      */
-    function setKey($key)
+    public function setKey($key)
     {
         $this->key = $key;
     }
 
     /**
-     * Get debug mode flag
+     * Get verbose log
      *
-     * @return boolean
+     * @return string
      */
-    function getDebug()
+    public function getVerboseLog()
     {
-        return $this->debug;
-    }
-
-    /**
-     * Set debug mode
-     *
-     * @param boolean $debug
-     */
-    function setDebug($debug = true)
-    {
-        $this->debug = $debug;
+        return $this->verboseLog;
     }
 
     /**
@@ -180,7 +181,7 @@ class SparkPostApiClient
      *
      * @return type
      */
-    function getLogger()
+    public function getLogger()
     {
         return $this->logger;
     }
@@ -190,7 +191,7 @@ class SparkPostApiClient
      *
      * @param callable $logger
      */
-    function setLogger(callable $logger)
+    public function setLogger(callable $logger)
     {
         $this->logger = $logger;
     }
@@ -200,7 +201,7 @@ class SparkPostApiClient
      *
      * @return int
      */
-    function getSubaccount()
+    public function getSubaccount()
     {
         return $this->subaccount;
     }
@@ -210,7 +211,7 @@ class SparkPostApiClient
      *
      * @param int $subaccount
      */
-    function setSubaccount($subaccount)
+    public function setSubaccount($subaccount)
     {
         $this->subaccount = $subaccount;
     }
@@ -790,16 +791,19 @@ class SparkPostApiClient
         curl_setopt($ch, CURLOPT_USERAGENT, 'SparkPostApiClient v' . self::CLIENT_VERSION);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_URL, self::API_ENDPOINT . '/' . $endpoint);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, (int) $this->getOption('connect_timeout'));
-        curl_setopt($ch, CURLOPT_TIMEOUT, (int) $this->getOption('timeout'));
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, (int) $this->getCurlOption('connect_timeout'));
+        curl_setopt($ch, CURLOPT_TIMEOUT, (int) $this->getCurlOption('timeout'));
 
-        if ($this->debug) {
+        // Collect verbose data in a stream
+        if ($this->getCurlOption('verbose')) {
             curl_setopt($ch, CURLOPT_VERBOSE, true);
+            $verbose = fopen('php://temp', 'w+');
+            curl_setopt($ch, CURLOPT_STDERR, $verbose);
         }
 
         // This fixes ca cert issues if server is not configured properly
         if (strlen(ini_get('curl.cainfo')) === 0) {
-            curl_setopt($ch, CURLOPT_CAINFO, __DIR__ . "/cacert.pem");
+            curl_setopt($ch, CURLOPT_CAINFO, \Composer\CaBundle\CaBundle::getBundledCaBundlePath());
         }
 
         switch ($action) {
@@ -816,6 +820,11 @@ class SparkPostApiClient
 
         if (!$result) {
             throw new Exception('Error: "' . curl_error($ch) . '" - Code: ' . curl_errno($ch));
+        }
+
+        if ($this->getCurlOption('verbose')) {
+            rewind($verbose);
+            $this->verboseLog = stream_get_contents($verbose);
         }
 
         curl_close($ch);

@@ -34,7 +34,7 @@ Otherwise, you need to call the following line:
     ```php
     SparkPostMailer::setAsMailer();
     ```
-    
+
 One small difference from the original mailer is that it will return a fifth argument
 for successful emails with the result of the call to the SparkPost api.
 
@@ -56,7 +56,7 @@ Subaccounts support
 If you use a master api key, but need to [limit data access] (https://developers.sparkpost.com/api/#/introduction/subaccounts),
 you can configure a subaccount id
 
-        define('SPARKPOST_SUBACCOUNT_ID',1234);
+    define('SPARKPOST_SUBACCOUNT_ID',1234);
 
 or through the YML config.
 
@@ -65,8 +65,8 @@ SparkPost integration
 
 This module create a new admin section that allows you to:
 
-- List all messages events
-- Have a settings tab to configure domain and webhook
+- List all messages events and allow searching them
+- Have a settings tab to list and configure sending domains and webhook
 
 NOTE : Make sure that you have a valid api key (not a subaccount key) to access
 features related to installation of the webhook through the CMS.
@@ -114,6 +114,23 @@ You can also inspect the whole payload and the batch id with
 You can test if your extension is working properly by visiting /sparkpost/test
 if your site is in dev mode. It will load sample data from the API.
 
+Please ensure that the url for the webhook is properly configured if required
+by using the following configuration
+
+    SparkPostAdmin:
+      webhook_base_url: 'https://my.domain.com/'
+
+You can also define the following constant to log all incoming payload into a given
+directory. Make sure the directory exists. It is relative to your base folder.
+
+    define('SPARKPOST_WEBHOOK_LOG_DIR','_incoming');
+
+Please also pay attention to the fact that the webhook is called for ALL events
+of your SparkPost account, regardless of the fact of which API key generated the transmission.
+
+To help you overcome this, if a subaccount id is defined, events will be filtered according
+to this subaccount.
+
 Preventing spam
 ==================
 
@@ -133,7 +150,7 @@ issue.
    SparkPostMailer:
      inline_styles: true
    ```
-   
+
 It require the use of pelago\emogrifier so please install it if you plan to use this option.
 
 Compatibility

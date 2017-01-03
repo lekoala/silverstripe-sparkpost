@@ -89,7 +89,7 @@ class SparkPostMailer extends Mailer
             }
             $this->client = new SparkPostApiClient($key);
             if (Director::isDev()) {
-                $this->client->setDebug(true);
+                $this->client->setCurlOption(CURLOPT_VERBOSE, true);
             }
             $subaccountId = self::config()->subaccount_id;
             if ($subaccountId) {
