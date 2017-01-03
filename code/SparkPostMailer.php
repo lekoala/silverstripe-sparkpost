@@ -10,6 +10,7 @@ use SparkPost\SparkPost;
  */
 class SparkPostMailer extends Mailer
 {
+
     /**
      * Mailer instance
      *
@@ -26,7 +27,7 @@ class SparkPostMailer extends Mailer
 
     /**
      * Last exception from the client
-     * 
+     *
      * @var Exception
      */
     protected $lastException;
@@ -43,7 +44,7 @@ class SparkPostMailer extends Mailer
      */
     public static function setAsMailer()
     {
-        $mailer  = self::getInstance();
+        $mailer = self::getInstance();
         // On SilverStripe 3.1, injector is not used
         $version = self::getFrameworkVersion();
         if (version_compare($version, '3.2.0', '<')) {
@@ -60,7 +61,7 @@ class SparkPostMailer extends Mailer
      */
     public static function getFrameworkVersion()
     {
-        $lm      = new LeftAndMain();
+        $lm = new LeftAndMain();
         $version = $lm->CMSVersion();
         if ($version) {
             $parts = explode(', ', $version);
@@ -127,15 +128,14 @@ class SparkPostMailer extends Mailer
      * @param string $extraHeaders
      * @return array
      */
-    public function encodeFileForEmail($file, $destFileName = false,
-                                       $disposition = null, $extraHeaders = "")
+    public function encodeFileForEmail($file, $destFileName = false, $disposition = null, $extraHeaders = "")
     {
         if (!$file) {
             throw new Exception("encodeFileForEmail: not passed a filename and/or data");
         }
 
         if (is_string($file)) {
-            $file             = ['filename' => $file];
+            $file = ['filename' => $file];
             $file['contents'] = file_get_contents($file['filename']);
         }
 
@@ -175,11 +175,9 @@ class SparkPostMailer extends Mailer
      * @param array $customheaders
      * @return array|bool
      */
-    public function sendPlain($to, $from, $subject, $plainContent,
-                              $attachedFiles = false, $customheaders = false)
+    public function sendPlain($to, $from, $subject, $plainContent, $attachedFiles = false, $customheaders = false)
     {
-        return $this->send($to, $from, $subject, false, $attachedFiles,
-                $customheaders, $plainContent, false);
+        return $this->send($to, $from, $subject, false, $attachedFiles, $customheaders, $plainContent, false);
     }
 
     /**
@@ -193,12 +191,9 @@ class SparkPostMailer extends Mailer
      * @param array $customheaders
      * @return array|bool
      */
-    public function sendHTML($to, $from, $subject, $htmlContent,
-                             $attachedFiles = false, $customheaders = false,
-                             $plainContent = false, $inlineImages = false)
+    public function sendHTML($to, $from, $subject, $htmlContent, $attachedFiles = false, $customheaders = false, $plainContent = false, $inlineImages = false)
     {
-        return $this->send($to, $from, $subject, $htmlContent, $attachedFiles,
-                $customheaders, $plainContent, $inlineImages);
+        return $this->send($to, $from, $subject, $htmlContent, $attachedFiles, $customheaders, $plainContent, $inlineImages);
     }
 
     /**
@@ -211,19 +206,18 @@ class SparkPostMailer extends Mailer
     {
         if (is_array($address)) {
             $email = $address['email'];
-            $name  = $address['name'];
+            $name = $address['name'];
         } elseif (strpos($address, '<') !== false) {
             $email = self::get_email_from_rfc_email($address);
-            $name  = self::get_displayname_from_rfc_email($address);
+            $name = self::get_displayname_from_rfc_email($address);
         } else {
             $email = $address;
-            $name  = null;
+            $name = null;
         }
 
         // As a fallback, extract the first part of the email as the name
         if (!$name && self::config()->name_fallback) {
-            $name = trim(ucwords(str_replace(['.', '-', '_'], ' ',
-                        substr($email, 0, strpos($email, '@')))));
+            $name = trim(ucwords(str_replace(['.', '-', '_'], ' ', substr($email, 0, strpos($email, '@')))));
         }
 
         return [
@@ -269,9 +263,7 @@ class SparkPostMailer extends Mailer
      * @param bool $inlineImages
      * @return array|bool
      */
-    protected function send($to, $from, $subject, $htmlContent,
-                            $attachedFiles = false, $customheaders = false,
-                            $plainContent = false, $inlineImages = false)
+    protected function send($to, $from, $subject, $htmlContent, $attachedFiles = false, $customheaders = false, $plainContent = false, $inlineImages = false)
     {
         $original_to = $to;
 
@@ -301,8 +293,7 @@ class SparkPostMailer extends Mailer
         if (self::config()->default_params) {
             $default_params = self::config()->default_params;
         }
-        $params = array_merge($default_params,
-            [
+        $params = array_merge($default_params, [
             "subject" => $subject,
             "from" => $from,
             "recipients" => $to_array
@@ -345,8 +336,7 @@ class SparkPostMailer extends Mailer
             // Include any specified attachments as additional parts
             foreach ($attachedFiles as $file) {
                 if (isset($file['tmp_name']) && isset($file['name'])) {
-                    $attachments[] = $this->encodeFileForEmail($file['tmp_name'],
-                        $file['name']);
+                    $attachments[] = $this->encodeFileForEmail($file['tmp_name'], $file['name']);
                 } else {
                     $attachments[] = $this->encodeFileForEmail($file);
                 }
@@ -386,44 +376,42 @@ class SparkPostMailer extends Mailer
         if (self::config()->enable_logging) {
             // Append some extra information at the end
             $logContent = $htmlContent;
-            $logContent .= '<hr><pre>Debug infos:'."\n\n";
-            $logContent .= 'To : '.print_r($original_to, true)."\n";
-            $logContent .= 'Subject : '.$subject."\n";
-            $logContent .= 'Headers : '.print_r($customheaders, true)."\n";
+            $logContent .= '<hr><pre>Debug infos:' . "\n\n";
+            $logContent .= 'To : ' . print_r($original_to, true) . "\n";
+            $logContent .= 'Subject : ' . $subject . "\n";
+            $logContent .= 'Headers : ' . print_r($customheaders, true) . "\n";
             if (!empty($params['from'])) {
-                $logContent .= 'From : '.$params['from']."\n";
+                $logContent .= 'From : ' . $params['from'] . "\n";
             }
             if (!empty($params['recipients'])) {
-                $logContent .= 'Recipients : '.print_r($params['recipients'],
-                        true)."\n";
+                $logContent .= 'Recipients : ' . print_r($params['recipients'], true) . "\n";
             }
             $logContent .= '</pre>';
 
             $logFolder = $this->getLogFolder();
 
             // Generate filename
-            $filter  = new FileNameFilter();
-            $title   = substr($filter->filter($subject), 0, 35);
-            $logName = date('Ymd').'_'.$title.'_'.uniqid();
+            $filter = new FileNameFilter();
+            $title = substr($filter->filter($subject), 0, 35);
+            $logName = date('Ymd') . '_' . $title . '_' . uniqid();
 
             // Store attachments if any
             if (!empty($params['attachments'])) {
                 $logContent .= '<hr />';
                 foreach ($params['attachments'] as $attachment) {
-                    file_put_contents($logFolder.'/'.$logName.'_'.$attachment['name'],
-                        base64_decode($attachment['data']));
+                    file_put_contents($logFolder . '/' . $logName . '_' . $attachment['name'], base64_decode($attachment['data']));
 
-                    $logContent .= 'File : '.$attachment['name'].'<br/>';
+                    $logContent .= 'File : ' . $attachment['name'] . '<br/>';
                 }
             }
 
             // Store it
             $ext = empty($htmlContent) ? 'txt' : 'html';
 
-            $r = file_put_contents($logFolder.'/'.$logName.'.'.$ext, $logContent);
+            $r = file_put_contents($logFolder . '/' . $logName . '.' . $ext, $logContent);
 
             if (!$r && Director::isDev()) {
-                throw new Exception('Failed to store email in '.$logFolder);
+                throw new Exception('Failed to store email in ' . $logFolder);
             }
         }
 
@@ -442,8 +430,7 @@ class SparkPostMailer extends Mailer
                 return [$original_to, $subject, $htmlContent, $customheaders, $result];
             }
 
-            SS_Log::log("No recipient was accepted for transmission ".$result['id'],
-                $logLevel);
+            SS_Log::log("No recipient was accepted for transmission " . $result['id'], $logLevel);
         } catch (Exception $ex) {
             $this->lastException = $ex;
             SS_Log::log($ex->getMessage(), $logLevel);
@@ -454,7 +441,7 @@ class SparkPostMailer extends Mailer
 
     /**
      * Inline styles using Pelago Emogrifier
-     * 
+     *
      * @param string $html
      * @return string
      */
@@ -467,19 +454,19 @@ class SparkPostMailer extends Mailer
         $emogrifier->setHtml($html);
         $emogrifier->disableInvisibleNodeRemoval();
         $emogrifier->enableCssToHtmlMapping();
-        $html       = $emogrifier->emogrify();
+        $html = $emogrifier->emogrify();
 
         return $html;
     }
 
     /**
      * Get the log folder and create it if necessary
-     * 
+     *
      * @return string
      */
     public function getLogFolder()
     {
-        $logFolder = BASE_PATH.'/'.self::config()->log_folder;
+        $logFolder = BASE_PATH . '/' . self::config()->log_folder;
         if (!is_dir($logFolder)) {
             mkdir($logFolder, 0755, true);
         }
@@ -488,7 +475,7 @@ class SparkPostMailer extends Mailer
 
     /**
      * Convert an html email to a text email while keeping formatting and links
-     * 
+     *
      * @param string $content
      * @return string
      */
@@ -499,13 +486,11 @@ class SparkPostMailer extends Mailer
         // Convert html entities to strip them later on
         $content = html_entity_decode($content);
         // Convert new lines for relevant tags
-        $content = str_ireplace(['<br />', '<br/>', '<br>', '<table>', '</table>'],
-            "\r\n", $content);
+        $content = str_ireplace(['<br />', '<br/>', '<br>', '<table>', '</table>'], "\r\n", $content);
         // Avoid lots of spaces
         $content = preg_replace('/[\r\n]+/', ' ', $content);
         // Replace links to keep them accessible
-        $content = preg_replace('/<a[\s\S]*href="(.*?)"[\s\S]*>(.*)<\/a>/i',
-            '$2 ($1)', $content);
+        $content = preg_replace('/<a[\s\S]*href="(.*?)"[\s\S]*>(.*)<\/a>/i', '$2 ($1)', $content);
         // Remove html tags
         $content = strip_tags($content);
         // Trim content so that it's nice
@@ -515,7 +500,7 @@ class SparkPostMailer extends Mailer
 
     /**
      * Get last exception
-     * 
+     *
      * @return Exception
      */
     public function getLastException()
@@ -544,7 +529,7 @@ class SparkPostMailer extends Mailer
             }
         }
         // Look in siteconfig for default sender
-        $config       = SiteConfig::current_site_config();
+        $config = SiteConfig::current_site_config();
         $config_field = self::config()->siteconfig_from;
         if ($config_field && !empty($config->$config_field)) {
             return $config->$config_field;
@@ -576,7 +561,7 @@ class SparkPostMailer extends Mailer
                 return $original_to;
             }
         }
-        $config       = SiteConfig::current_site_config();
+        $config = SiteConfig::current_site_config();
         $config_field = self::config()->siteconfig_to;
         if ($config_field && !empty($config->$config_field)) {
             return $config->$config_field;
@@ -595,13 +580,13 @@ class SparkPostMailer extends Mailer
     public static function createDefaultEmail()
     {
         $fulldom = Director::absoluteBaseURL();
-        $host    = parse_url($fulldom, PHP_URL_HOST);
+        $host = parse_url($fulldom, PHP_URL_HOST);
         if (!$host) {
             $host = 'localhost';
         }
         $dom = str_replace('www.', '', $host);
 
-        return 'postmaster@'.$dom;
+        return 'postmaster@' . $dom;
     }
 
     /**
@@ -614,7 +599,7 @@ class SparkPostMailer extends Mailer
      */
     public static function get_displayname_from_rfc_email($rfc_email_string)
     {
-        $name       = preg_match('/[\w\s]+/u', $rfc_email_string, $matches);
+        $name = preg_match('/[\w\s]+/u', $rfc_email_string, $matches);
         $matches[0] = trim($matches[0]);
         return $matches[0];
     }
@@ -630,8 +615,7 @@ class SparkPostMailer extends Mailer
         if (strpos($rfc_email_string, '<') === false) {
             return $rfc_email_string;
         }
-        $mailAddress = preg_match('/(?:<)(.+)(?:>)$/', $rfc_email_string,
-            $matches);
+        $mailAddress = preg_match('/(?:<)(.+)(?:>)$/', $rfc_email_string, $matches);
         if (empty($matches)) {
             return $rfc_email_string;
         }

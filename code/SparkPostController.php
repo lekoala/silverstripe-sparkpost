@@ -8,6 +8,7 @@
  */
 class SparkPostController extends Controller
 {
+
     private static $allowed_actions = [
         'incoming',
         'test',
@@ -43,7 +44,7 @@ class SparkPostController extends Controller
             return 'You can only test in dev mode';
         }
 
-        $client  = $this->getClient();
+        $client = $this->getClient();
         $payload = $client->getSampleEvents();
 
         $this->processPayload($payload, 'TEST');
@@ -92,7 +93,7 @@ class SparkPostController extends Controller
 
     /**
      * Process data
-     * 
+     *
      * @param array $payload
      * @param string $batchId
      */

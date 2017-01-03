@@ -7,40 +7,41 @@
  */
 class SparkPostApiClient
 {
+
     // CLIENT SETTINGS
-    const CLIENT_VERSION         = '0.1';
-    const API_ENDPOINT           = 'https://api.sparkpost.com/api/v1';
-    const METHOD_GET             = "GET";
-    const METHOD_POST            = "POST";
-    const METHOD_PUT             = "PUT";
-    const METHOD_DELETE          = "DELETE";
-    const DATETIME_FORMAT        = 'Y-m-d\TH:i';
+    const CLIENT_VERSION = '0.1';
+    const API_ENDPOINT = 'https://api.sparkpost.com/api/v1';
+    const METHOD_GET = "GET";
+    const METHOD_POST = "POST";
+    const METHOD_PUT = "PUT";
+    const METHOD_DELETE = "DELETE";
+    const DATETIME_FORMAT = 'Y-m-d\TH:i';
     // SPARKPOST TYPES
-    const TYPE_MESSAGE           = 'message_event'; // Bounce, Delivery, Injection, SMS Status, Spam Complaint, Out of Band, Policy Rejection, Delay
-    const TYPE_ENGAGEMENT        = 'track_event'; // Click, Open
-    const TYPE_GENERATION        = 'gen_event'; // Generation Failure, Generation Rejection
-    const TYPE_UNSUBSCRIBE       = 'unsubscribe_event'; // List Unsubscribe, Link Unsubscribe
-    const TYPE_RELAY             = 'relay_event'; // Relay Injection, Relay Rejection, Relay Delivery, Relay Temporary Failure, Relay Permanent Failure
+    const TYPE_MESSAGE = 'message_event'; // Bounce, Delivery, Injection, SMS Status, Spam Complaint, Out of Band, Policy Rejection, Delay
+    const TYPE_ENGAGEMENT = 'track_event'; // Click, Open
+    const TYPE_GENERATION = 'gen_event'; // Generation Failure, Generation Rejection
+    const TYPE_UNSUBSCRIBE = 'unsubscribe_event'; // List Unsubscribe, Link Unsubscribe
+    const TYPE_RELAY = 'relay_event'; // Relay Injection, Relay Rejection, Relay Delivery, Relay Temporary Failure, Relay Permanent Failure
     // SPARKPOST EVENTS
-    const EVENT_DELIVERY         = 'delivery';
-    const EVENT_BOUNCE           = 'bounce';
-    const EVENT_INJECTION        = 'injection';
-    const EVENT_SMS_STATUS       = 'sms_status';
-    const EVENT_SPAM_COMPLAINT   = 'spam_complaint';
-    const EVENT_OUT_OF_BAND      = 'out_of_band';
+    const EVENT_DELIVERY = 'delivery';
+    const EVENT_BOUNCE = 'bounce';
+    const EVENT_INJECTION = 'injection';
+    const EVENT_SMS_STATUS = 'sms_status';
+    const EVENT_SPAM_COMPLAINT = 'spam_complaint';
+    const EVENT_OUT_OF_BAND = 'out_of_band';
     const EVENT_POLICY_REJECTION = 'policy_rejection';
-    const EVENT_DELAY            = 'delay';
-    const EVENT_OPEN             = 'open';
-    const EVENT_CLICK            = 'click';
-    const EVENT_GEN_FAILURE      = 'generation_failure';
-    const EVENT_GEN_REJECTION    = 'generation_rejection';
-    const EVENT_LIST_UNSUB       = 'list_unsubscribe';
-    const EVENT_LINK_UNSUB       = 'link_unsubscribe';
-    const EVENT_RELAY_INJECTION  = 'relay_injection';
-    const EVENT_RELAY_REJECTION  = 'relay_rejection';
-    const EVENT_RELAY_DELIVERY   = 'relay_delivery';
-    const EVENT_RELAY_TEMPFAIL   = 'relay_tempfail';
-    const EVENT_RELAY_PERMFAIL   = 'relay_permfail';
+    const EVENT_DELAY = 'delay';
+    const EVENT_OPEN = 'open';
+    const EVENT_CLICK = 'click';
+    const EVENT_GEN_FAILURE = 'generation_failure';
+    const EVENT_GEN_REJECTION = 'generation_rejection';
+    const EVENT_LIST_UNSUB = 'list_unsubscribe';
+    const EVENT_LINK_UNSUB = 'link_unsubscribe';
+    const EVENT_RELAY_INJECTION = 'relay_injection';
+    const EVENT_RELAY_REJECTION = 'relay_rejection';
+    const EVENT_RELAY_DELIVERY = 'relay_delivery';
+    const EVENT_RELAY_TEMPFAIL = 'relay_tempfail';
+    const EVENT_RELAY_PERMFAIL = 'relay_permfail';
 
     /**
      * Your api key
@@ -72,7 +73,7 @@ class SparkPostApiClient
 
     /**
      * The ID of the subaccount to use
-     * 
+     *
      * @var int
      */
     protected $subaccount;
@@ -108,7 +109,7 @@ class SparkPostApiClient
 
     /**
      * Get default options
-     * 
+     *
      * @return array
      */
     function getDefaultOptions()
@@ -128,7 +129,7 @@ class SparkPostApiClient
     function getOption($name)
     {
         if (!isset($this->opts[$name])) {
-            throw new InvalidArgumentException("$name is not a valid option. Valid options are : ".
+            throw new InvalidArgumentException("$name is not a valid option. Valid options are : " .
             implode(', ', array_keys($this->opts)));
         }
         return $this->opts[$name];
@@ -323,7 +324,7 @@ class SparkPostApiClient
      */
     public function getTransmission($id)
     {
-        return $this->makeRequest('transmissions/'.$id);
+        return $this->makeRequest('transmissions/' . $id);
     }
 
     /**
@@ -334,7 +335,7 @@ class SparkPostApiClient
      */
     public function deleteTransmission($id)
     {
-        return $this->makeRequest('transmissions/'.$id, self::METHOD_DELETE);
+        return $this->makeRequest('transmissions/' . $id, self::METHOD_DELETE);
     }
 
     /**
@@ -415,7 +416,7 @@ class SparkPostApiClient
             'per_page' => 100,
             'from' => $this->createValidDatetime('-7 days'),
         ];
-        $params        = array_merge($defaultParams, $params);
+        $params = array_merge($defaultParams, $params);
 
         return $this->makeRequest('message-events', self::METHOD_GET, $params);
     }
@@ -463,8 +464,7 @@ class SparkPostApiClient
      * @param array $credentials An array containing "username" and "password"
      * @return type
      */
-    public function createSimpleWebhook($name, $target, array $events = null,
-                                        $auth = false, $credentials = null)
+    public function createSimpleWebhook($name, $target, array $events = null, $auth = false, $credentials = null)
     {
         if ($events === null) {
             // Default to the most used events
@@ -480,7 +480,7 @@ class SparkPostApiClient
             if ($credentials === null) {
                 $credentials = ['username' => "sparkpost", "password" => "sparkpost"];
             }
-            $params['auth_type']        = 'basic';
+            $params['auth_type'] = 'basic';
             $params['auth_credentials'] = $credentials;
         }
         return $this->createWebhook($params);
@@ -488,7 +488,7 @@ class SparkPostApiClient
 
     /**
      * List all webhooks
-     * 
+     *
      * @param string $timezone
      * @return array
      */
@@ -509,7 +509,7 @@ class SparkPostApiClient
      */
     public function getWebhook($id)
     {
-        return $this->makeRequest('webhooks/'.$id, self::METHOD_GET);
+        return $this->makeRequest('webhooks/' . $id, self::METHOD_GET);
     }
 
     /**
@@ -521,7 +521,7 @@ class SparkPostApiClient
      */
     public function updateWebhook($id, $params = [])
     {
-        return $this->makeRequest('webhooks/'.$id, self::METHOD_PUT, $params);
+        return $this->makeRequest('webhooks/' . $id, self::METHOD_PUT, $params);
     }
 
     /**
@@ -532,7 +532,7 @@ class SparkPostApiClient
      */
     public function deleteWebhook($id)
     {
-        return $this->makeRequest('webhooks/'.$id, self::METHOD_DELETE);
+        return $this->makeRequest('webhooks/' . $id, self::METHOD_DELETE);
     }
 
     /**
@@ -543,8 +543,7 @@ class SparkPostApiClient
      */
     public function validateWebhook($id)
     {
-        return $this->makeRequest('webhooks/'.$id.'/validate',
-                self::METHOD_POST, '{"msys": {}}');
+        return $this->makeRequest('webhooks/' . $id . '/validate', self::METHOD_POST, '{"msys": {}}');
     }
 
     /**
@@ -559,8 +558,7 @@ class SparkPostApiClient
      */
     public function webhookBatchStatus($id, $limit = 1000)
     {
-        return $this->makeRequest('webhooks/'.$id.'/batch-status',
-                self::METHOD_GET, ['limit' => 1000]);
+        return $this->makeRequest('webhooks/' . $id . '/batch-status', self::METHOD_GET, ['limit' => 1000]);
     }
 
     /**
@@ -575,8 +573,7 @@ class SparkPostApiClient
         if ($events) {
             $params['events'] = $events;
         }
-        return $this->makeRequest('webhooks/events/samples/', self::METHOD_GET,
-                $params);
+        return $this->makeRequest('webhooks/events/samples/', self::METHOD_GET, $params);
     }
 
     /**
@@ -622,7 +619,7 @@ class SparkPostApiClient
      */
     public function getSendingDomain($id)
     {
-        return $this->makeRequest('sending-domains/'.$id, self::METHOD_GET);
+        return $this->makeRequest('sending-domains/' . $id, self::METHOD_GET);
     }
 
     /**
@@ -633,9 +630,7 @@ class SparkPostApiClient
      */
     public function verifySendingDomain($id)
     {
-        return $this->makeRequest('sending-domains/'.$id.'/verify',
-                self::METHOD_POST,
-                [
+        return $this->makeRequest('sending-domains/' . $id . '/verify', self::METHOD_POST, [
                 'dkim_verify' => true,
                 'spf_verify' => true
         ]);
@@ -650,8 +645,7 @@ class SparkPostApiClient
      */
     public function updateSendingDomain($id, $params = [])
     {
-        return $this->makeRequest('sending-domainss/'.$id, self::METHOD_PUT,
-                $params);
+        return $this->makeRequest('sending-domainss/' . $id, self::METHOD_PUT, $params);
     }
 
     /**
@@ -662,7 +656,7 @@ class SparkPostApiClient
      */
     public function deleteSendingDomain($id)
     {
-        return $this->makeRequest('sending-domains/'.$id, self::METHOD_DELETE);
+        return $this->makeRequest('sending-domains/' . $id, self::METHOD_DELETE);
     }
 
     /**
@@ -678,7 +672,7 @@ class SparkPostApiClient
             $time = strtotime($time);
         }
         if (!$format) {
-            $dt = new DateTime('@'.$time);
+            $dt = new DateTime('@' . $time);
         } else {
             $dt = DateTime::createFromFormat($format, $time);
         }
@@ -717,7 +711,7 @@ class SparkPostApiClient
     public function buildAddressFromString($string, $header_to = null)
     {
         $email = self::get_email_from_rfc_email($string);
-        $name  = self::get_displayname_from_rfc_email($string);
+        $name = self::get_displayname_from_rfc_email($string);
         return $this->buildAddress($email, $name, $header_to);
     }
 
@@ -731,9 +725,7 @@ class SparkPostApiClient
      * @return array
      * @throws Exception
      */
-    public function buildRecipient($address, array $tags = null,
-                                   array $metadata = null,
-                                   array $substitution_data = null)
+    public function buildRecipient($address, array $tags = null, array $metadata = null, array $substitution_data = null)
     {
         if (is_array($address)) {
             if (empty($address['email'])) {
@@ -781,24 +773,23 @@ class SparkPostApiClient
         }
 
         if ($action === self::METHOD_GET && !empty($data)) {
-            $endpoint .= '?'.http_build_query($data);
+            $endpoint .= '?' . http_build_query($data);
         }
         if ($action === self::METHOD_POST && is_array($data)) {
             $data = json_encode($data);
         }
 
-        $header   = [];
+        $header = [];
         $header[] = 'Content-Type: application/json';
-        $header[] = 'Authorization: '.$this->key;
+        $header[] = 'Authorization: ' . $this->key;
         if ($this->subaccount) {
-            $header[] = 'X-MSYS-SUBACCOUNT: '.$this->subaccount;
+            $header[] = 'X-MSYS-SUBACCOUNT: ' . $this->subaccount;
         }
 
         curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
-        curl_setopt($ch, CURLOPT_USERAGENT,
-            'SparkPostApiClient v'.self::CLIENT_VERSION);
+        curl_setopt($ch, CURLOPT_USERAGENT, 'SparkPostApiClient v' . self::CLIENT_VERSION);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_URL, self::API_ENDPOINT.'/'.$endpoint);
+        curl_setopt($ch, CURLOPT_URL, self::API_ENDPOINT . '/' . $endpoint);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, (int) $this->getOption('connect_timeout'));
         curl_setopt($ch, CURLOPT_TIMEOUT, (int) $this->getOption('timeout'));
 
@@ -808,7 +799,7 @@ class SparkPostApiClient
 
         // This fixes ca cert issues if server is not configured properly
         if (strlen(ini_get('curl.cainfo')) === 0) {
-            curl_setopt($ch, CURLOPT_CAINFO, __DIR__."/cacert.pem");
+            curl_setopt($ch, CURLOPT_CAINFO, __DIR__ . "/cacert.pem");
         }
 
         switch ($action) {
@@ -824,14 +815,14 @@ class SparkPostApiClient
         $result = curl_exec($ch);
 
         if (!$result) {
-            throw new Exception('Error: "'.curl_error($ch).'" - Code: '.curl_errno($ch));
+            throw new Exception('Error: "' . curl_error($ch) . '" - Code: ' . curl_errno($ch));
         }
 
         curl_close($ch);
 
         $decodedResult = json_decode($result, true);
         if (!$decodedResult) {
-            throw new Exception("Failed to decode json : ".self::json_last_error_msg());
+            throw new Exception("Failed to decode json : " . self::json_last_error_msg());
         }
 
         $this->results[] = $decodedResult;
@@ -841,7 +832,7 @@ class SparkPostApiClient
                 $message = $item['message'];
                 // Prepend code to message
                 if (isset($item['code'])) {
-                    $message = $item['code'].' - '.$message;
+                    $message = $item['code'] . ' - ' . $message;
 
                     // For invalid domains, append domain name to make error more useful
                     if ($item['code'] == 7001) {
@@ -854,7 +845,7 @@ class SparkPostApiClient
                         }
                         if ($from) {
                             $domain = substr(strrchr($from, "@"), 1);
-                            $message .= ' ('.$domain.')';
+                            $message .= ' (' . $domain . ')';
                         }
                     }
 
@@ -870,7 +861,7 @@ class SparkPostApiClient
                                         $addresses[] = json_encode($recipient['address']);
                                     }
                                 }
-                                $message .= ' ('.implode(',', $addresses).')';
+                                $message .= ' (' . implode(',', $addresses) . ')';
                             }
                         } else {
                             $message .= ' (no recipients defined)';
@@ -878,12 +869,11 @@ class SparkPostApiClient
                     }
                 }
                 if (isset($item['description'])) {
-                    $message .= ': '.$item['description'];
+                    $message .= ': ' . $item['description'];
                 }
                 return $message;
             }, $decodedResult['errors']);
-            throw new Exception("The API returned the following error(s) : ".implode("; ",
-                $errors));
+            throw new Exception("The API returned the following error(s) : " . implode("; ", $errors));
         }
 
         return $decodedResult['results'];
@@ -940,7 +930,7 @@ class SparkPostApiClient
      */
     protected static function get_displayname_from_rfc_email($rfc_email_string)
     {
-        $name       = preg_match('/[\w\s]+/u', $rfc_email_string, $matches);
+        $name = preg_match('/[\w\s]+/u', $rfc_email_string, $matches);
         $matches[0] = trim($matches[0]);
         return $matches[0];
     }
@@ -956,8 +946,7 @@ class SparkPostApiClient
         if (strpos($rfc_email_string, '<') === false) {
             return $rfc_email_string;
         }
-        $mailAddress = preg_match('/(?:<)(.+)(?:>)$/', $rfc_email_string,
-            $matches);
+        $mailAddress = preg_match('/(?:<)(.+)(?:>)$/', $rfc_email_string, $matches);
         if (empty($matches)) {
             return $rfc_email_string;
         }
