@@ -82,8 +82,6 @@ class SparkPostController extends Controller
             return $response;
         }
 
-        $payload = json_decode($json, JSON_OBJECT_AS_ARRAY);
-
         if (defined('SPARKPOST_WEBHOOK_LOG_DIR')) {
             $dir = rtrim(Director::baseFolder(), '/') . '/' . rtrim(SPARKPOST_WEBHOOK_LOG_DIR, '/');
 
@@ -93,12 +91,14 @@ class SparkPostController extends Controller
 
             if (is_dir($dir)) {
                 $payload['@headers'] = $req->getHeaders();
-                $prettyPayload = json_encode($payload, JSON_PRETTY_PRINT);
+                $prettyPayload = json_encode(json_decode($json), JSON_PRETTY_PRINT);
                 file_put_contents($dir . '/' . $batchId . '.json', $prettyPayload);
             } else {
                 SS_Log::log("Directory $dir does not exist", SS_Log::DEBUG);
             }
         }
+
+        $payload = json_decode($json, JSON_OBJECT_AS_ARRAY);
 
         try {
             $this->processPayload($payload, $batchId);
