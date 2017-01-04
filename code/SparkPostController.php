@@ -9,6 +9,8 @@
 class SparkPostController extends Controller
 {
 
+    protected $eventsCount = 0;
+    protected $skipCount = 0;
     private static $allowed_actions = [
         'incoming',
         'test',
@@ -47,11 +49,18 @@ class SparkPostController extends Controller
         }
 
         $client = $this->getClient();
-        $payload = $client->getSampleEvents();
+
+        $file = $this->getRequest()->getVar('file');
+        if ($file) {
+            $data = file_get_contents(Director::baseFolder() . '/' . rtrim($file, '/'));
+            $payload = json_decode($data, JSON_OBJECT_AS_ARRAY);
+        } else {
+            $payload = $client->getSampleEvents();
+        }
 
         $this->processPayload($payload, 'TEST');
 
-        return 'TEST OK';
+        return 'TEST OK - ' . $this->eventsCount . ' events processed / ' . $this->skipCount . ' events skipped';
     }
 
     /**
@@ -68,7 +77,7 @@ class SparkPostController extends Controller
         // which is useful for auditing and prevention of processing duplicate batches.
         $batchId = $req->getHeader('X-Messagesystems-Batch-Id');
         if (!$batchId) {
-            $batchId = time();
+            $batchId = uniqid();
         }
 
         $json = file_get_contents('php://input');
@@ -92,7 +101,7 @@ class SparkPostController extends Controller
             if (is_dir($dir)) {
                 $payload['@headers'] = $req->getHeaders();
                 $prettyPayload = json_encode(json_decode($json), JSON_PRETTY_PRINT);
-                file_put_contents($dir . '/' . $batchId . '.json', $prettyPayload);
+                file_put_contents($dir . '/' . $time . '_' . $batchId . '.json', $prettyPayload);
             } else {
                 SS_Log::log("Directory $dir does not exist", SS_Log::DEBUG);
             }
@@ -134,9 +143,11 @@ class SparkPostController extends Controller
 
             // Ignore events not related to the subaccount we are managing
             if (!empty($data['subaccount_id']) && $subaccount && $subaccount != $data['subaccount_id']) {
+                $this->skipCount++;
                 continue;
             }
 
+            $this->eventsCount++;
             $this->extend('onAnyEvent', $data, $type);
 
             switch ($type) {
