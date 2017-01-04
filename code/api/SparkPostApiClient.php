@@ -624,7 +624,7 @@ class SparkPostApiClient
     }
 
     /**
-     * Verify a sending domain
+     * Verify a sending domain - This will ask SparkPost to check if SPF and DKIM are valid
      *
      * @param string $id
      * @return array
@@ -646,7 +646,7 @@ class SparkPostApiClient
      */
     public function updateSendingDomain($id, $params = [])
     {
-        return $this->makeRequest('sending-domainss/' . $id, self::METHOD_PUT, $params);
+        return $this->makeRequest('sending-domains/' . $id, self::METHOD_PUT, $params);
     }
 
     /**
