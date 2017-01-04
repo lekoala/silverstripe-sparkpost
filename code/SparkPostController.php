@@ -124,7 +124,7 @@ class SparkPostController extends Controller
     {
         $this->extend('beforeProcessPayload', $payload, $batchId);
 
-        $subaccount = defined('SPARKPOST_SUBACCOUNT_ID') ? SPARKPOST_SUBACCOUNT_ID : null;
+        $subaccount = SparkPostMailer::getInstance()->getClient()->getSubaccount();
 
         foreach ($payload as $r) {
             $ev = $r['msys'];

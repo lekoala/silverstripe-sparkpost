@@ -274,7 +274,12 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
 
         if (!in_array('friendly_froms', $disabled_filters)) {
             $fields->push($friendly_froms = new TextField('params[friendly_froms]', _t('SparkPostAdmin.FRIENDLYFROM', 'Sender'), $this->getParam('friendly_froms')));
-            $friendly_froms->setAttribute('placeholder', 'sender@mail.example.com,other@exemple.com');
+            $friendly_froms->setAttribute('placeholder', 'sender@mail.example.com,other@example.com');
+        }
+
+        if (!in_array('recipients', $disabled_filters)) {
+            $fields->push($recipients = new TextField('params[recipients]', _t('SparkPostAdmin.RECIPIENTS', 'Recipients'), $this->getParam('recipients')));
+            $recipients->setAttribute('placeholder', 'recipient@example.com,other@example.com');
         }
 
         if (!SparkPostMailer::config()->subaccount_id && !in_array('subaccounts', $disabled_filters)) {
