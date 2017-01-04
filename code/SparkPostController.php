@@ -64,9 +64,9 @@ class SparkPostController extends Controller
      */
     public function incoming(SS_HTTPRequest $req)
     {
-        // Each webhook batch contains the header X-MessageSystems-Batch-ID,
+        // Each webhook batch contains the header X-Messagesystems-Batch-Id,
         // which is useful for auditing and prevention of processing duplicate batches.
-        $batchId = $req->getHeader('X-MessageSystems-Batch-ID');
+        $batchId = $req->getHeader('X-Messagesystems-Batch-Id');
         if (!$batchId) {
             $batchId = time();
         }
