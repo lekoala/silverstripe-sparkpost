@@ -7,7 +7,7 @@ fr:
     DOUNINSTALLDOMAIN: 'Désinstaller le domaine'
     DOUNINSTALL_WEBHOOK: 'Désinstaller le webhook'
     DomainInstalled: 'Le domaine par défaut {domain} est installé.'
-    DomainInstalledBut: 'Le domaine par défaut {domain} is installed, but is not properly configured. SPF records : {spf}. Domain key (DKIM) : {dkim}. Please check your dns zone.'
+    DomainInstalledBut: 'Le domaine par défaut {domain} est installé mais n''est pas correctement configuré.'
     DomainNotInstalled: 'Le domaine d''envoi par defaut {domain} n''est pas installé.'
     EventDate: Date
     EventRecipient: Destinataire

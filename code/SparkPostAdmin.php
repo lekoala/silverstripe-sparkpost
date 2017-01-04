@@ -36,6 +36,11 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     protected $subaccountKey = false;
 
     /**
+     * @var Exception
+     */
+    protected $lastException;
+
+    /**
      * @var ViewableData
      */
     protected $currentMessage;
@@ -86,8 +91,10 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
      */
     public function getEditForm($id = null, $fields = null)
     {
-        if (!$id)
+        if (!$id) {
             $id = $this->currentPageID();
+        }
+
         $form = parent::getEditForm($id);
 
         $record = $this->getRecord($id);
@@ -104,7 +111,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         $messages = $this->Messages();
         if (is_string($messages)) {
             // The api returned an error
-            $messagesList = new LiteralField("MessageAlert", '<div class="message bad">' . $messages . '</div>');
+            $messagesList = new LiteralField("MessageAlert", $this->MessageHelper($messages, 'bad'));
         } else {
             $messagesList = GridField::create(
                     'Messages', false, $messages, $messageListConfig
@@ -222,6 +229,43 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             $v = self::$cache_enabled;
         }
         return $v;
+    }
+
+    /**
+     * A simple cache helper
+     *
+     * @param string $method
+     * @param array $params
+     * @param array $tags
+     * @param int $expireInSeconds
+     * @return array
+     */
+    protected function getCachedData($method, $params, $tags = [], $expireInSeconds = 60)
+    {
+        $enabled = $this->getCacheEnabled();
+        if ($enabled) {
+            $cache = $this->getCache();
+            $key = md5(serialize($params));
+            $cacheResult = $cache->load($key);
+        }
+        if ($enabled && $cacheResult) {
+            $data = unserialize($cacheResult);
+        } else {
+            try {
+                $data = $this->getClient()->$method($params);
+            } catch (Exception $ex) {
+                $this->lastException = $ex;
+                SS_Log::log($ex, SS_Log::DEBUG);
+                $data = false;
+            }
+
+            //5 minutes cache
+            if ($enabled) {
+                $cache->save(serialize($data), $key, $tags, $expireInSeconds);
+            }
+        }
+
+        return $data;
     }
 
     public function getParams()
@@ -347,25 +391,9 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     {
         $params = $this->getParams();
 
-        $cache_enabled = $this->getCacheEnabled();
-        if ($cache_enabled) {
-            $cache = $this->getCache();
-            $cache_key = md5(serialize($params));
-            $cache_result = $cache->load($cache_key);
-        }
-        if ($cache_enabled && $cache_result) {
-            $messages = unserialize($cache_result);
-        } else {
-            try {
-                $messages = $this->getClient()->searchMessageEvents($params);
-            } catch (Exception $ex) {
-                return $ex->getMessage();
-            }
-
-            //5 minutes cache
-            if ($cache_enabled) {
-                $cache->save(serialize($messages), $cache_key, [self::MESSAGE_TAG], 60 * self::MESSAGE_CACHE_MINUTES);
-            }
+        $messages = $this->getCachedData('searchMessageEvents', $params, [self::MESSAGE_TAG], 60 * self::MESSAGE_CACHE_MINUTES);
+        if ($messages === false) {
+            return $this->lastException->getMessage();
         }
 
         // Consolidate Subject/Sender for open and click events
@@ -490,25 +518,8 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     {
         $client = $this->getClient();
 
-        $cache_enabled = $this->getCacheEnabled();
-        if ($cache_enabled) {
-            $cache = $this->getCache();
-            $cache_key = self::WEBHOOK_TAG;
-            $cache_result = $cache->load($cache_key);
-        }
-        if ($cache_enabled && $cache_result) {
-            $list = unserialize($cache_result);
-        } else {
-            try {
-                $list = $client->listAllWebhooks();
-                if ($cache_enabled) {
-                    $cache->save(serialize($list), $cache_key, [self::WEBHOOK_TAG], 60 * self::WEBHOOK_CACHE_MINUTES);
-                }
-            } catch (Exception $ex) {
-                $list = [];
-                SS_Log::log($ex->getMessage(), SS_Log::DEBUG);
-            }
-        }
+        $list = $this->getCachedData('listAllWebhooks', null, [self::WEBHOOK_TAG], 60 * self::WEBHOOK_CACHE_MINUTES);
+
         if (empty($list)) {
             return false;
         }
@@ -599,7 +610,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             }
             $this->getCache()->clean('matchingTag', [self::WEBHOOK_TAG]);
         } catch (Exception $ex) {
-            SS_Log::log($ex->getMessage(), SS_Log::DEBUG);
+            SS_Log::log($ex, SS_Log::DEBUG);
         }
 
         return $this->redirectBack();
@@ -639,7 +650,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             }
             $this->getCache()->clean('matchingTag', [self::WEBHOOK_TAG]);
         } catch (Exception $ex) {
-            SS_Log::log($ex->getMessage(), SS_Log::DEBUG);
+            SS_Log::log($ex, SS_Log::DEBUG);
         }
 
         return $this->redirectBack();
@@ -654,27 +665,8 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     {
         $client = $this->getClient();
 
-        $host = $this->getDomain();
+        $domain = $this->getCachedData('getSendingDomain', $this->getDomain(), [self::SENDINGDOMAIN_TAG], 60 * self::SENDINGDOMAIN_CACHE_MINUTES);
 
-        $cache_enabled = $this->getCacheEnabled();
-        if ($cache_enabled) {
-            $cache = $this->getCache();
-            $cache_key = self::SENDINGDOMAIN_TAG;
-            $cache_result = $cache->load($cache_key);
-        }
-        if ($cache_enabled && $cache_result) {
-            $domain = unserialize($cache_result);
-        } else {
-            try {
-                $domain = $client->getSendingDomain($host);
-                if ($cache_enabled) {
-                    $cache->save(serialize($domain), $cache_key, [self::SENDINGDOMAIN_TAG], 60 * self::SENDINGDOMAIN_CACHE_MINUTES);
-                }
-            } catch (Exception $ex) {
-                $domain = null;
-                SS_Log::log($ex->getMessage(), SS_Log::DEBUG);
-            }
-        }
         if (empty($domain)) {
             return false;
         }
@@ -682,35 +674,18 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     }
 
     /**
-     * Check if sending domain is verified
+     * Trigger request to check if sending domain is verified
      *
      * @return array
      */
-    public function SendingDomainVerified()
+    public function VerifySendingDomain()
     {
         $client = $this->getClient();
 
         $host = $this->getDomain();
 
-        $cache_enabled = $this->getCacheEnabled();
-        if ($cache_enabled) {
-            $cache = $this->getCache();
-            $cache_key = self::SENDINGDOMAIN_TAG . '_verify';
-            $cache_result = $cache->load($cache_key);
-        }
-        if ($cache_enabled && $cache_result) {
-            $verification = unserialize($cache_result);
-        } else {
-            try {
-                $verification = $client->verifySendingDomain($host);
-                if ($cache_enabled) {
-                    $cache->save(serialize($verification), $cache_key, [self::SENDINGDOMAIN_TAG . '_verify'], 60 * self::SENDINGDOMAIN_CACHE_MINUTES);
-                }
-            } catch (Exception $ex) {
-                $verification = null;
-                SS_Log::log($ex->getMessage(), SS_Log::DEBUG);
-            }
-        }
+        $verification = $client->verifySendingDomain($host);
+
         if (empty($verification)) {
             return false;
         }
@@ -726,7 +701,8 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     {
         $defaultDomain = $this->getDomain();
         $defaultDomainInfos = null;
-        $domains = $this->getClient()->listAllSendingDomains();
+
+        $domains = $this->getCachedData('listAllSendingDomains', null, [self::SENDINGDOMAIN_TAG], 60 * self::SENDINGDOMAIN_CACHE_MINUTES);
 
         $fields = new CompositeField();
 
@@ -863,9 +839,8 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         try {
             $client->createSimpleSendingDomain($domain);
             $this->getCache()->clean('matchingTag', [self::SENDINGDOMAIN_TAG]);
-            $this->getCache()->clean('matchingTag', [self::SENDINGDOMAIN_TAG . '_verify']);
         } catch (Exception $ex) {
-            SS_Log::log($ex->getMessage(), SS_Log::DEBUG);
+            SS_Log::log($ex, SS_Log::DEBUG);
         }
 
         return $this->redirectBack();
@@ -879,30 +854,18 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
      */
     public function UninstallDomainForm(CompositeField $fields)
     {
-        $verified = $this->SendingDomainVerified();
-
-        $spfVerified = true;
-        $dkimVerified = true;
-        if ($verified) {
-            if ($verified['spf_status'] == 'invalid') {
-                $spfVerified = false;
-            }
-            if ($verified['dkim_status'] == 'invalid') {
-                $dkimVerified = false;
-            }
-        }
+        $domainInfos = $this->SendingDomainInstalled();
 
         $domain = $this->getDomain();
 
-        if ($spfVerified && $dkimVerified) {
+        if ($domainInfos && $domainInfos['status']['ownership_verified']) {
             $fields->push(new LiteralField('Info', $this->MessageHelper(
                     _t('SparkPostAdmin.DomainInstalled', 'Default domain {domain} is installed.', ['domain' => $domain]), 'good')
                 )
             );
         } else {
             $fields->push(new LiteralField('Info', $this->MessageHelper(
-                    _t('SparkPostAdmin.DomainInstalledBut', 'Default domain {domain} is installed, but is not properly configured. SPF records : {spf}. Domain key (DKIM) : {dkim}. Please check your dns zone.', ['domain' => $domain, 'spf' => $spfVerified ? 'OK' : 'NOT OK',
-                    'dkim' => $dkimVerified ? 'OK' : 'NOT OK']), 'warning')
+                    _t('SparkPostAdmin.DomainInstalledBut', 'Default domain {domain} is installed, but is not properly configured.'), 'warning')
                 )
             );
         }
@@ -932,9 +895,8 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
                 $client->deleteSendingDomain($domain);
             }
             $this->getCache()->clean('matchingTag', [self::SENDINGDOMAIN_TAG]);
-            $this->getCache()->clean('matchingTag', [self::SENDINGDOMAIN_TAG . '_verify']);
         } catch (Exception $ex) {
-            SS_Log::log($ex->getMessage(), SS_Log::DEBUG);
+            SS_Log::log($ex, SS_Log::DEBUG);
         }
 
         return $this->redirectBack();
@@ -945,6 +907,5 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         $this->getCache()->clean('matchingTag', [self::MESSAGE_TAG]);
         $this->getCache()->clean('matchingTag', [self::WEBHOOK_TAG]);
         $this->getCache()->clean('matchingTag', [self::SENDINGDOMAIN_TAG]);
-        $this->getCache()->clean('matchingTag', [self::SENDINGDOMAIN_TAG . '_verify']);
     }
 }
