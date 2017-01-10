@@ -1,7 +1,5 @@
 <?php
 
-use SparkPost\SparkPost;
-
 /**
  * SparkPost for SilverStripe
  *
