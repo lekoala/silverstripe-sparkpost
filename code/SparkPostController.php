@@ -101,6 +101,7 @@ class SparkPostController extends Controller
             if (is_dir($dir)) {
                 $payload['@headers'] = $req->getHeaders();
                 $prettyPayload = json_encode(json_decode($json), JSON_PRETTY_PRINT);
+                $time = date('Ymd-His');
                 file_put_contents($dir . '/' . $time . '_' . $batchId . '.json', $prettyPayload);
             } else {
                 SS_Log::log("Directory $dir does not exist", SS_Log::DEBUG);
