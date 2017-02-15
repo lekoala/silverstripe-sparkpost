@@ -707,22 +707,24 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         $fields = new CompositeField();
 
         $list = new ArrayList();
-        foreach ($domains as $domain) {
-            // We are using a subaccount api key
-            if (!isset($domain['shared_with_subaccounts'])) {
-                $this->subaccountKey = true;
-            }
+        if ($domains) {
+            foreach ($domains as $domain) {
+                // We are using a subaccount api key
+                if (!isset($domain['shared_with_subaccounts'])) {
+                    $this->subaccountKey = true;
+                }
 
-            $list->push(new ArrayData([
-                'Domain' => $domain['domain'],
-                'SPF' => $domain['status']['spf_status'],
-                'DKIM' => $domain['status']['dkim_status'],
-                'Compliance' => $domain['status']['compliance_status'],
-                'Verified' => $domain['status']['ownership_verified'],
-            ]));
+                $list->push(new ArrayData([
+                    'Domain' => $domain['domain'],
+                    'SPF' => $domain['status']['spf_status'],
+                    'DKIM' => $domain['status']['dkim_status'],
+                    'Compliance' => $domain['status']['compliance_status'],
+                    'Verified' => $domain['status']['ownership_verified'],
+                ]));
 
-            if ($domain['domain'] == $defaultDomain) {
-                $defaultDomainInfos = $domain;
+                if ($domain['domain'] == $defaultDomain) {
+                    $defaultDomainInfos = $domain;
+                }
             }
         }
 
