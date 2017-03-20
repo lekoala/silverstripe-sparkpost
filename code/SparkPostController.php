@@ -14,6 +14,7 @@ class SparkPostController extends Controller
     private static $allowed_actions = [
         'incoming',
         'test',
+        'configure_inbound_emails'
     ];
 
     /**
@@ -61,6 +62,59 @@ class SparkPostController extends Controller
         $this->processPayload($payload, 'TEST');
 
         return 'TEST OK - ' . $this->eventsCount . ' events processed / ' . $this->skipCount . ' events skipped';
+    }
+
+    /**
+     * @link https://support.sparkpost.com/customer/portal/articles/2039614-enabling-inbound-email-relaying-relay-webhooks
+     * @param SS_HTTPRequest $req
+     * @return string
+     */
+    public function configure_inbound_emails(SS_HTTPRequest $req)
+    {
+        if (!Director::isDev() || !Permission::check('ADMIN')) {
+            return 'You must be in dev mode or be logged as an admin';
+        }
+
+        $client = $this->getClient();
+
+        if (!defined('SPARKPOST_INBOUND_DOMAIN')) {
+            die('You must define a key SPARKPOST_INBOUND_DOMAIN');
+        }
+
+        // This is the domain that users will send email to.
+        $result = $client->createInboundDomain(SPARKPOST_INBOUND_DOMAIN);
+
+        $list = $client->listInboundDomains();
+
+        echo '<pre>' . __FILE__ . ':' . __LINE__ . '<br/>';
+        print_r($result);
+        print_r($list);
+        echo '</pre>';
+
+        // Now that you have your InboundDomain set up, you can create your Relay Webhook by sending a POST request to
+        // https://api.sparkpost.com/api/v1/relay-webhooks. This step links your consumer with the Inbound Domain.
+
+        /*
+         *  "name": "Replies Webhook",
+         *  "target": "https://webhooks.customer.example/replies",
+         * "auth_token": "5ebe2294ecd0e0f08eab7690d2a6ee69",
+         *  "match": {
+         *  "protocol": "SMTP",
+         * "domain": "email.example.com"
+         */
+
+        //  The match.domain property should be the same as the Inbound Domain you set up in the previous step
+        $webhookResult = $client->createRelayWebhook([
+            'name' => 'Inbound Webhook',
+            'target' => Director::absoluteURL('sparkpost/incoming'),
+            'match' => [
+                'domain' => SPARKPOST_INBOUND_DOMAIN
+            ]
+        ]);
+
+        echo '<pre>' . __FILE__ . ':' . __LINE__ . '<br/>';
+        print_r($webhookResult);
+        echo '</pre>';
     }
 
     /**

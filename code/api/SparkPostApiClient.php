@@ -661,6 +661,59 @@ class SparkPostApiClient
     }
 
     /**
+     * Create an inbound domain
+     *
+     * @param array|string $params
+     * @return array
+     */
+    public function createInboundDomain($params)
+    {
+        if (is_string($params)) {
+            $params = ['domain' => $params];
+        }
+        return $this->makeRequest('inbound-domains', self::METHOD_POST, $params);
+    }
+
+    /**
+     * List all inbound domains
+     * 
+     * @return array
+     */
+    public function listInboundDomains()
+    {
+        return $this->makeRequest('inbound-domains', self::METHOD_GET);
+    }
+
+    /**
+     * Create a relay webhook
+     *
+     *  "name": "Replies Webhook",
+     *  "target": "https://webhooks.customer.example/replies",
+     * "auth_token": "5ebe2294ecd0e0f08eab7690d2a6ee69",
+     *  "match": {
+     *  "protocol": "SMTP",
+     * "domain": "email.example.com"
+     * }
+     *
+     * @param array|string $params
+     * @return array
+     */
+    public function createRelayWebhook($params)
+    {
+        return $this->makeRequest('relay-webhooks', self::METHOD_POST, $params);
+    }
+
+    /**
+     * List all inbound domains
+     *
+     * @return array
+     */
+    public function listRelayWebhooks()
+    {
+        return $this->makeRequest('relay-webhooks', self::METHOD_GET);
+    }
+
+    /**
      * Create a valid date for the API
      *
      * @param string $time
