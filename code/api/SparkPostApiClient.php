@@ -884,7 +884,7 @@ class SparkPostApiClient
 
         $decodedResult = json_decode($result, true);
         if (!$decodedResult) {
-            throw new Exception("Failed to decode json : " . self::json_last_error_msg());
+            throw new Exception("Failed to decode $result : " . self::json_last_error_msg());
         }
 
         $this->results[] = $decodedResult;
