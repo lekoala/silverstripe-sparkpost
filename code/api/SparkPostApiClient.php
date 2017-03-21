@@ -935,9 +935,14 @@ class SparkPostApiClient
 
         curl_close($ch);
 
-        $decodedResult = json_decode($result, true);
-        if (!$decodedResult) {
-            throw new Exception("Failed to decode $result : " . self::json_last_error_msg());
+        // In some cases, SparkPost api returns this strange empty result
+        if ($result == '{ }') {
+            $decodedResult = ['results' => null];
+        } else {
+            $decodedResult = json_decode($result, true);
+            if (!$decodedResult) {
+                throw new Exception("Failed to decode $result : " . self::json_last_error_msg());
+            }
         }
 
         $this->results[] = $decodedResult;
