@@ -84,10 +84,12 @@ class SparkPostController extends Controller
         }
 
         $clearExisting = $req->getVar('clear_existing');
+        $clearWebhooks = $req->getVar('clear_webhooks');
+        $clearInbound = $req->getVar('clear_inbound');
         if ($clearExisting) {
             echo '<strong>Existing inbounddomains and relay webhooks will be cleared</strong><br/>';
         } else {
-            echo 'You can clear existing inbound domains and relay webhooks by passing ?clear_existing=1<br/>';
+            echo 'You can clear existing inbound domains and relay webhooks by passing ?clear_existing=1&clear_webhooks=1&clear_inbound=1<br/>';
         }
 
         $client = $this->getMasterClient();
@@ -96,23 +98,46 @@ class SparkPostController extends Controller
             die('You must define a key SPARKPOST_INBOUND_DOMAIN');
         }
 
+        /*
+         *  "name": "Replies Webhook",
+         *  "target": "https://webhooks.customer.example/replies",
+         * "auth_token": "5ebe2294ecd0e0f08eab7690d2a6ee69",
+         *  "match": {
+         *  "protocol": "SMTP",
+         * "domain": "email.example.com"
+         */
 
-        $list = $client->listInboundDomains();
+        $listWebhooks = $client->listRelayWebhooks();
+        $listInboundDomains = $client->listInboundDomains();
+
+        if ($clearExisting) {
+            // we need to delete relay webhooks first!
+            if ($clearWebhooks) {
+                foreach ($listWebhooks as $wh) {
+                    $client->deleteRelayWebhook($wh['id']);
+                    echo 'Delete relay webhook ' . $wh['id'] . '<br/>';
+                }
+            }
+            if ($clearInbound) {
+                foreach ($listInboundDomains as $id) {
+                    $client->deleteInboundDomain($id['domain']);
+                    echo 'Delete domain ' . $id['domain'] . '<br/>';
+                }
+            }
+
+            $listWebhooks = $client->listRelayWebhooks();
+            $listInboundDomains = $client->listInboundDomains();
+        }
 
         echo '<pre>' . __FILE__ . ':' . __LINE__ . '<br/>';
-        print_r($list);
+        print_r($listInboundDomains);
         echo '</pre>';
 
         $found = false;
 
-        foreach ($list as $el) {
-            if ($clearExisting) {
-                $client->deleteInboundDomain($el['domain']);
-                echo 'Delete domain ' . $el['domain'] . '<br/>';
-            } else {
-                if ($el['domain'] == SPARKPOST_INBOUND_DOMAIN) {
-                    $found = true;
-                }
+        foreach ($listInboundDomains as $id) {
+            if ($id['domain'] == SPARKPOST_INBOUND_DOMAIN) {
+                $found = true;
             }
         }
 
@@ -132,17 +157,6 @@ class SparkPostController extends Controller
         // Now that you have your InboundDomain set up, you can create your Relay Webhook by sending a POST request to
         // https://api.sparkpost.com/api/v1/relay-webhooks. This step links your consumer with the Inbound Domain.
 
-        /*
-         *  "name": "Replies Webhook",
-         *  "target": "https://webhooks.customer.example/replies",
-         * "auth_token": "5ebe2294ecd0e0f08eab7690d2a6ee69",
-         *  "match": {
-         *  "protocol": "SMTP",
-         * "domain": "email.example.com"
-         */
-
-        $listWebhooks = $client->listRelayWebhooks();
-
         echo '<pre>' . __FILE__ . ':' . __LINE__ . '<br/>';
         print_r($listWebhooks);
         echo '</pre>';
@@ -150,13 +164,8 @@ class SparkPostController extends Controller
         $found = false;
 
         foreach ($listWebhooks as $wh) {
-            if ($clearExisting) {
-                $client->deleteRelayWebhook($wh['id']);
-                echo 'Delete relay webhook ' . $wh['id'] . '<br/>';
-            } else {
-                if ($wh['match']['domain'] == SPARKPOST_INBOUND_DOMAIN) {
-                    $found = true;
-                }
+            if ($wh['match']['domain'] == SPARKPOST_INBOUND_DOMAIN) {
+                $found = true;
             }
         }
 
