@@ -1,5 +1,16 @@
 <?php
 // Autosetup constants defined in _ss_environment
+// Regular api key used for sending emails (including subaccount support)
+if (defined('SPARKPOST_API_KEY') && SPARKPOST_API_KEY !== '') {
+    SparkPostMailer::config()->api_key = SPARKPOST_API_KEY;
+}
+// Master api key that is used to configure the account. If no api key is defined, the master api key is used
+if (defined('SPARKPOST_MASTER_API_KEY') && SPARKPOST_MASTER_API_KEY !== '') {
+    SparkPostMailer::config()->master_api_key = SPARKPOST_MASTER_API_KEY;
+    if (!SparkPostMailer::config()->api_key) {
+        SparkPostMailer::config()->api_key = SPARKPOST_MASTER_API_KEY;
+    }
+}
 if (defined('SPARKPOST_API_KEY') && SPARKPOST_API_KEY !== '') {
     SparkPostMailer::config()->api_key = SPARKPOST_API_KEY;
 }

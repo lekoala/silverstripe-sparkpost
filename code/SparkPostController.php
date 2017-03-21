@@ -39,6 +39,14 @@ class SparkPostController extends Controller
     }
 
     /**
+     * @return SparkPostApiClient
+     */
+    public function getMasterClient()
+    {
+        return $this->getMailer()->getMasterClient();
+    }
+
+    /**
      * You can also see /resources/sample.json
      * 
      * @param SS_HTTPRequest $req
@@ -75,7 +83,7 @@ class SparkPostController extends Controller
             return 'You must be in dev mode or be logged as an admin';
         }
 
-        $client = $this->getClient();
+        $client = $this->getMasterClient();
 
         if (!defined('SPARKPOST_INBOUND_DOMAIN')) {
             die('You must define a key SPARKPOST_INBOUND_DOMAIN');

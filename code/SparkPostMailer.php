@@ -98,6 +98,25 @@ class SparkPostMailer extends Mailer
     }
 
     /**
+     * @return SparkPostApiClient
+     * @throws Exception
+     */
+    public function getMasterClient()
+    {
+        if (!$this->client) {
+            $key = self::config()->master_api_key;
+            if (empty($key)) {
+                throw new Exception("Master api key is not defined or empty");
+            }
+            $this->client = new SparkPostApiClient($key);
+            if (Director::isDev()) {
+                $this->client->setCurlOption(CURLOPT_VERBOSE, true);
+            }
+        }
+        return $this->client;
+    }
+
+    /**
      * @return \SparkPostMailer
      */
     public static function getInstance()
