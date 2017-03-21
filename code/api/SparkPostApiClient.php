@@ -663,15 +663,12 @@ class SparkPostApiClient
     /**
      * Create an inbound domain
      *
-     * @param array|string $params
+     * @param string $domain
      * @return array
      */
-    public function createInboundDomain($params)
+    public function createInboundDomain($domain)
     {
-        if (is_string($params)) {
-            $params = ['domain' => $params];
-        }
-        return $this->makeRequest('inbound-domains', self::METHOD_POST, $params);
+        return $this->makeRequest('inbound-domains', self::METHOD_POST, ['domain' => $domain]);
     }
 
     /**
@@ -682,6 +679,28 @@ class SparkPostApiClient
     public function listInboundDomains()
     {
         return $this->makeRequest('inbound-domains', self::METHOD_GET);
+    }
+
+    /**
+     * Get details of an inbound domain
+     *
+     * @param string $domain
+     * @return array
+     */
+    public function getInboundDomain($domain)
+    {
+        return $this->makeRequest('inbound-domains/' . $domain, self::METHOD_GET);
+    }
+
+    /**
+     * Delete an inbound domain
+     *
+     * @param string $domain
+     * @return array
+     */
+    public function deleteInboundDomain($domain)
+    {
+        return $this->makeRequest('inbound-domains/' . $domain, self::METHOD_DELETE);
     }
 
     /**
@@ -704,13 +723,47 @@ class SparkPostApiClient
     }
 
     /**
-     * List all inbound domains
+     * List all relay webhooks
      *
      * @return array
      */
     public function listRelayWebhooks()
     {
         return $this->makeRequest('relay-webhooks', self::METHOD_GET);
+    }
+
+    /**
+     * Get the details of a relay webhook
+     *
+     * @param int $id
+     * @return array
+     */
+    public function getRelayWebhook($id)
+    {
+        return $this->makeRequest('relay-webhooks/' . $id, self::METHOD_GET);
+    }
+
+    /**
+     * Update a relay webhook
+     *
+     * @param int $id
+     * @param array $params
+     * @return array
+     */
+    public function updateRelayWebhook($id, $params)
+    {
+        return $this->makeRequest('relay-webhooks/' . $id, self::METHOD_PUT, $params);
+    }
+
+    /**
+     * Delete a relay webhook
+     * 
+     * @param int $id
+     * @return array
+     */
+    public function deleteRelayWebhook($id)
+    {
+        return $this->makeRequest('relay-webhooks/' . $id, self::METHOD_DELETE);
     }
 
     /**

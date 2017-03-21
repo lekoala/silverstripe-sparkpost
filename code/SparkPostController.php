@@ -83,6 +83,13 @@ class SparkPostController extends Controller
             return 'You must be in dev mode or be logged as an admin';
         }
 
+        $clearExisting = $req->getVar('clear_existing');
+        if ($clearExisting) {
+            echo '<strong>Existing inbounddomains and relay webhooks will be cleared</strong><br/>';
+        } else {
+            echo 'You can clear existing inbound domains and relay webhooks by passing ?clear_existing=1<br/>';
+        }
+
         $client = $this->getMasterClient();
 
         if (!defined('SPARKPOST_INBOUND_DOMAIN')) {
@@ -99,8 +106,13 @@ class SparkPostController extends Controller
         $found = false;
 
         foreach ($list as $el) {
-            if ($el['domain'] == SPARKPOST_INBOUND_DOMAIN) {
-                $found = true;
+            if ($clearExisting) {
+                $client->deleteInboundDomain($el['domain']);
+                echo 'Delete domain ' . $el['domain'] . '<br/>';
+            } else {
+                if ($el['domain'] == SPARKPOST_INBOUND_DOMAIN) {
+                    $found = true;
+                }
             }
         }
 
@@ -138,8 +150,13 @@ class SparkPostController extends Controller
         $found = false;
 
         foreach ($listWebhooks as $wh) {
-            if ($wh['match']['domain'] == SPARKPOST_INBOUND_DOMAIN) {
-                $found = true;
+            if ($clearExisting) {
+                $client->deleteRelayWebhook($wh['id']);
+                echo 'Delete relay webhook ' . $wh['id'] . '<br/>';
+            } else {
+                if ($wh['match']['domain'] == SPARKPOST_INBOUND_DOMAIN) {
+                    $found = true;
+                }
             }
         }
 
