@@ -392,7 +392,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         $params = $this->getParams();
 
         $messages = $this->getCachedData('searchMessageEvents', $params, [self::MESSAGE_TAG], 60 * self::MESSAGE_CACHE_MINUTES);
-        if ($messages === false) {
+        if ($messages === false && $this->lastException instanceof Exception) {
             return $this->lastException->getMessage();
         }
 
