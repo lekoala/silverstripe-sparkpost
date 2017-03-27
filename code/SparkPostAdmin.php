@@ -393,7 +393,10 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
 
         $messages = $this->getCachedData('searchMessageEvents', $params, [self::MESSAGE_TAG], 60 * self::MESSAGE_CACHE_MINUTES);
         if ($messages === false) {
-            return $this->lastException->getMessage();
+            if ($this->lastException) {
+                return $this->lastException->getMessage();
+            }
+            return _t('SparkpostAdmin.NO_MESSAGES', 'No messages');
         }
 
         // Consolidate Subject/Sender for open and click events
