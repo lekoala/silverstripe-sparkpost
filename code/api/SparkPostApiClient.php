@@ -103,7 +103,7 @@ class SparkPostApiClient
             }
         }
         $this->subaccount = $subaccount;
-        $this->curlOpts = array_merge($curlOpts, $this->getDefaultCurlOptions());
+        $this->curlOpts = array_merge($this->getDefaultCurlOptions(), $curlOpts);
     }
 
     /**
