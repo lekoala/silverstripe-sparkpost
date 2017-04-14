@@ -55,7 +55,7 @@ class SparkPostApiClient
      *
      * @var string
      */
-    protected $verboseLog;
+    protected $verboseLog = '';
 
     /**
      * A callback to log results
@@ -930,7 +930,7 @@ class SparkPostApiClient
 
         if ($this->getCurlOption('verbose')) {
             rewind($verbose);
-            $this->verboseLog = stream_get_contents($verbose);
+            $this->verboseLog .= stream_get_contents($verbose);
         }
 
         curl_close($ch);
