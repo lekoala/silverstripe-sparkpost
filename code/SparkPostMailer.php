@@ -410,7 +410,7 @@ class SparkPostMailer extends Mailer
             // Generate filename
             $filter = new FileNameFilter();
             $title = substr($filter->filter($subject), 0, 35);
-            $logName = date('Ymd') . '_' . $title . '_' . uniqid();
+            $logName = date('Ymd_His') . '_' . $title;
 
             // Store attachments if any
             if (!empty($params['attachments'])) {
