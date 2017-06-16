@@ -519,8 +519,6 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
      */
     public function WebhookInstalled()
     {
-        $client = $this->getClient();
-
         $list = $this->getCachedData('listAllWebhooks', null, [self::WEBHOOK_TAG], 60 * self::WEBHOOK_CACHE_MINUTES);
 
         if (empty($list)) {
@@ -528,7 +526,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         }
         $url = $this->WebhookUrl();
         foreach ($list as $el) {
-            if ($el['target'] === $url) {
+            if (!empty($el['target']) && $el['target'] === $url) {
                 return $el;
             }
         }
