@@ -24,7 +24,7 @@ You can also autoconfigure the module with the following constants in your _ss_e
 
 By defining the Api Key, the module will register a new mailer that will be used to send all emails.
 
-Regiter the new mailer
+Register the new mailer
 ==================
 
 If you define the SPARKPOST_API_KEY constant, the mailer will be automatically registered.
