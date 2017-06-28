@@ -84,7 +84,7 @@ kind of approach:
     if ($result) {
       $this->sessionMessage("Message has been sent", 'good');
     } else {
-      $this->sessionMessage("Sending failed:" . SparkPostMailer::getLastException()->getMessage(), 'bad');
+      $this->sessionMessage("Sending failed:" . SparkPostMailer::getInstance()->getLastException()->getMessage(), 'bad');
     }
 
 Webhooks
