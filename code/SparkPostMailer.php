@@ -117,6 +117,14 @@ class SparkPostMailer extends Mailer
     }
 
     /**
+     * @return bool
+     */
+    public static function getSendingDisabled()
+    {
+        return self::config()->disable_sending;
+    }
+
+    /**
      * @return \SparkPostMailer
      */
     public static function getInstance()
@@ -390,6 +398,12 @@ class SparkPostMailer extends Mailer
             $params['customHeaders'] = $customheaders;
         }
 
+        $sendingDisabled = false;
+        if (isset($customheaders['X-SendingDisabled']) && $customheaders['X-SendingDisabled']) {
+            $sendingDisabled = $sendingDisabled;
+            unset($customheaders['X-SendingDisabled']);
+        }
+
         if (self::config()->enable_logging) {
             // Append some extra information at the end
             $logContent = $htmlContent;
@@ -432,10 +446,9 @@ class SparkPostMailer extends Mailer
             }
         }
 
-
-        if (self::config()->disable_sending) {
+        if (self::getSendingDisabled() || $sendingDisabled) {
             $customheaders['X-SendingDisabled'] = true;
-            return [$original_to, $subject, $htmlContent, $customheaders];
+            return array($original_to, $subject, $htmlContent, $customheaders);
         }
 
         $logLevel = self::config()->log_level ? self::config()->log_level : 7;
