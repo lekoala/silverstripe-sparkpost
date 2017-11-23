@@ -1,10 +1,19 @@
 <?php
+namespace LeKoala\SparkPost;
+
+use Psr\Log\LoggerInterface;
+use SilverStripe\Control\Director;
+use SilverStripe\Core\Environment;
+use SilverStripe\Control\Controller;
+use SilverStripe\Security\Permission;
+use SilverStripe\Control\HTTPRequest;
+use SilverStripe\Control\Email\Mailer;
+use SilverStripe\Core\Injector\Injector;
 
 /**
  * Provide extensions points for handling the webhook
  *
  * @author LeKoala <thomas@lekoala.be>
- * @mixin InvoiceWebhookExtension
  */
 class SparkPostController extends Controller
 {
@@ -18,40 +27,26 @@ class SparkPostController extends Controller
     ];
 
     /**
-     * @return SparkPostMailer
-     * @throws Exception
+     * Inject public dependencies into the controller
+     *
+     * @var array
      */
-    public function getMailer()
-    {
-        $mailer = Email::mailer();
-        if (!$mailer instanceof SparkPostMailer) {
-            throw new Exception('This class require to use SparkPostMailer');
-        }
-        return $mailer;
-    }
+    private static $dependencies = [
+        'logger' => '%$Psr\Log\LoggerInterface',
+    ];
 
     /**
-     * @return SparkPostApiClient
+     * @var Psr\Log\LoggerInterface
      */
-    public function getClient()
-    {
-        return $this->getMailer()->getClient();
-    }
+    public $logger;
 
-    /**
-     * @return SparkPostApiClient
-     */
-    public function getMasterClient()
-    {
-        return $this->getMailer()->getMasterClient();
-    }
 
     /**
      * You can also see /resources/sample.json
-     * 
-     * @param SS_HTTPRequest $req
+     *
+     * @param HTTPRequest $req
      */
-    public function test(SS_HTTPRequest $req)
+    public function test(HTTPRequest $req)
     {
         if (!Director::isDev()) {
             return 'You can only test in dev mode';
@@ -74,10 +69,10 @@ class SparkPostController extends Controller
 
     /**
      * @link https://support.sparkpost.com/customer/portal/articles/2039614-enabling-inbound-email-relaying-relay-webhooks
-     * @param SS_HTTPRequest $req
+     * @param HTTPRequest $req
      * @return string
      */
-    public function configure_inbound_emails(SS_HTTPRequest $req)
+    public function configure_inbound_emails(HTTPRequest $req)
     {
         if (!Director::isDev() && !Permission::check('ADMIN')) {
             return 'You must be in dev mode or be logged as an admin';
@@ -92,9 +87,10 @@ class SparkPostController extends Controller
             echo 'You can clear existing inbound domains and relay webhooks by passing ?clear_existing=1&clear_webhooks=1&clear_inbound=1<br/>';
         }
 
-        $client = $this->getMasterClient();
+        $client = SparkPostHelper::getMasterClient();
 
-        if (!defined('SPARKPOST_INBOUND_DOMAIN')) {
+        $inbound_domain = Environment::get('SPARKPOST_INBOUND_DOMAIN');
+        if (!$inbound_domain) {
             die('You must define a key SPARKPOST_INBOUND_DOMAIN');
         }
 
@@ -197,9 +193,9 @@ class SparkPostController extends Controller
      * @link https://developers.sparkpost.com/api/#/reference/webhooks/create-a-webhook
      * @link https://www.sparkpost.com/blog/webhooks-beyond-the-basics/
      * @link https://support.sparkpost.com/customer/portal/articles/1976204-webhook-event-reference
-     * @param SS_HTTPRequest $req
+     * @param HTTPRequest $req
      */
-    public function incoming(SS_HTTPRequest $req)
+    public function incoming(HTTPRequest $req)
     {
         // Each webhook batch contains the header X-Messagesystems-Batch-Id,
         // which is useful for auditing and prevention of processing duplicate batches.
@@ -232,7 +228,7 @@ class SparkPostController extends Controller
                 $time = date('Ymd-His');
                 file_put_contents($dir . '/' . $time . '_' . $batchId . '.json', $prettyPayload);
             } else {
-                SS_Log::log("Directory $dir does not exist", SS_Log::DEBUG);
+                $this->getLogger()->debug("Directory $dir does not exist");
             }
         }
 
@@ -244,7 +240,7 @@ class SparkPostController extends Controller
             // Maybe processing payload will create exceptions, but we
             // catch them to send a proper response to the API
             $logLevel = self::config()->log_level ? self::config()->log_level : 7;
-            SS_Log::log($ex->getMessage(), $logLevel);
+            $this->getLogger()->log($ex->getMessage(), $logLevel);
         }
 
         $response->setBody('OK');
@@ -262,7 +258,7 @@ class SparkPostController extends Controller
     {
         $this->extend('beforeProcessPayload', $payload, $batchId);
 
-        $subaccount = SparkPostMailer::getInstance()->getClient()->getSubaccount();
+        $subaccount = SparkPostHelper::getClient()->getSubaccount();
 
         foreach ($payload as $r) {
             $ev = $r['msys'];
@@ -305,4 +301,16 @@ class SparkPostController extends Controller
 
         $this->extend('afterProcessPayload', $payload, $batchId);
     }
+
+
+    /**
+     * Get logger
+     *
+     * @return Psr\SimpleCache\CacheInterface
+     */
+    public function getLogger()
+    {
+        return $this->logger;
+    }
+
 }

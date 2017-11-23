@@ -1,4 +1,44 @@
 <?php
+namespace LeKoala\SparkPost;
+
+use \Exception;
+use SilverStripe\Forms\Tab;
+use SilverStripe\Forms\Form;
+use SilverStripe\Forms\TabSet;
+use SilverStripe\ORM\ArrayLib;
+use SilverStripe\ORM\ArrayList;
+use SilverStripe\View\ArrayData;
+use SilverStripe\Forms\FieldList;
+use SilverStripe\Forms\TextField;
+use SilverStripe\Forms\DateField;
+use SilverStripe\Control\Session;
+use SilverStripe\Control\Director;
+use SilverStripe\Forms\FormAction;
+use SilverStripe\Core\Environment;
+use SilverStripe\Forms\HiddenField;
+use SilverStripe\View\ViewableData;
+use SilverStripe\Security\Security;
+use SilverStripe\Admin\LeftAndMain;
+use SilverStripe\Forms\LiteralField;
+use SilverStripe\Security\Permission;
+use SilverStripe\Forms\DropdownField;
+use SilverStripe\Control\Email\Email;
+use SilverStripe\Control\Email\Mailer;
+use LeKoala\SparkPost\SparkPostHelper;
+use SilverStripe\Forms\CompositeField;
+use SilverStripe\SiteConfig\SiteConfig;
+use SilverStripe\Core\Injector\Injector;
+use SilverStripe\Forms\GridField\GridField;
+use SilverStripe\Control\Email\SwiftMailer;
+use SilverStripe\Security\PermissionProvider;
+use LeKoala\SparkPost\SparkPostSwiftTransport;
+use SilverStripe\Forms\GridField\GridFieldConfig;
+use SilverStripe\Forms\GridField\GridFieldFooter;
+use SilverStripe\Forms\GridField\GridFieldDetailForm;
+use Symbiote\GridFieldExtensions\GridFieldTitleHeader;
+use SilverStripe\Forms\GridField\GridFieldDataColumns;
+use SilverStripe\Forms\GridField\GridFieldToolbarHeader;
+use SilverStripe\Forms\GridField\GridFieldSortableHeader;
 
 /**
  * Allow you to see messages sent through the api key used to send messages
@@ -8,11 +48,8 @@
 class SparkPostAdmin extends LeftAndMain implements PermissionProvider
 {
 
-    const MESSAGE_TAG = 'message';
     const MESSAGE_CACHE_MINUTES = 5;
-    const WEBHOOK_TAG = 'webhook';
     const WEBHOOK_CACHE_MINUTES = 1440; // 1 day
-    const SENDINGDOMAIN_TAG = 'sending_domain';
     const SENDINGDOMAIN_CACHE_MINUTES = 1440; // 1 day
 
     private static $menu_title = "SparkPost";
@@ -28,6 +65,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         "doInstallDomain",
         "doUninstallDomain",
     ];
+
     private static $cache_enabled = true;
 
     /**
@@ -45,12 +83,32 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
      */
     protected $currentMessage;
 
+    /**
+     * Inject public dependencies into the controller
+     *
+     * @var array
+     */
+    private static $dependencies = [
+        'logger' => '%$Psr\Log\LoggerInterface',
+        'cache' => '%$Psr\SimpleCache\CacheInterface.myCache', // see _config/cache.yml
+    ];
+
+    /**
+     * @var Psr\Log\LoggerInterface
+     */
+    public $logger;
+
+    /**
+     * @var Psr\SimpleCache\CacheInterface
+     */
+    public $cache;
+
     public function init()
     {
         parent::init();
 
         if (isset($_GET['refresh'])) {
-            $this->clearAllCache();
+            $this->getCache()->clear();
         }
     }
 
@@ -65,24 +123,11 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     }
 
     /**
-     * @return SparkPostMailer
-     * @throws Exception
+     * @return Session
      */
-    public function getMailer()
+    public function getSession()
     {
-        $mailer = Email::mailer();
-        if (!$mailer instanceof SparkPostMailer) {
-            throw new Exception('This class require to use SparkPostMailer');
-        }
-        return $mailer;
-    }
-
-    /**
-     * @return SparkPostApiClient
-     */
-    public function getClient()
-    {
-        return $this->getMailer()->getClient();
+        return $this->getRequest()->getSession();
     }
 
     /**
@@ -99,13 +144,18 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
 
         $record = $this->getRecord($id);
 
+        // Check if this record is viewable
         if ($record && !$record->canView()) {
-            return Security::permissionFailure($this);
+            $response = Security::permissionFailure($this);
+            $this->setResponse($response);
+            return null;
         }
 
         // Build gridfield
         $messageListConfig = GridFieldConfig::create()->addComponents(
-            new GridFieldSortableHeader(), new GridFieldDataColumns(), new GridFieldFooter()
+            new GridFieldSortableHeader(),
+            new GridFieldDataColumns(),
+            new GridFieldFooter()
         );
 
         $messages = $this->Messages();
@@ -114,10 +164,13 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             $messagesList = new LiteralField("MessageAlert", $this->MessageHelper($messages, 'bad'));
         } else {
             $messagesList = GridField::create(
-                    'Messages', false, $messages, $messageListConfig
-                )->addExtraClass("messages_grid");
+                'Messages',
+                false,
+                $messages,
+                $messageListConfig
+            )->addExtraClass("messages_grid");
 
-            $columns = $messageListConfig->getComponentByType('GridFieldDataColumns');
+            $columns = $messageListConfig->getComponentByType(GridFieldDataColumns::class);
             $columns->setDisplayFields([
                 'transmission_id' => _t('SparkPostAdmin.EventTransmissionId', 'Id'),
                 'timestamp' => _t('SparkPostAdmin.EventDate', 'Date'),
@@ -141,13 +194,17 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
 
             if ($validator) {
                 $messageListConfig
-                    ->getComponentByType('GridFieldDetailForm')
+                    ->getComponentByType(GridFieldDetailForm::class)
                     ->setValidator($validator);
             }
         }
 
         // Create tabs
-        $messagesTab = new Tab('Messages', _t('SparkPostAdmin.Messages', 'Messages'), $this->SearchFields(), $messagesList,
+        $messagesTab = new Tab(
+            'Messages',
+            _t('SparkPostAdmin.Messages', 'Messages'),
+            $this->SearchFields(),
+            $messagesList,
             // necessary for tree node selection in LeftAndMain.EditForm.js
             new HiddenField('ID', false, 0)
         );
@@ -170,17 +227,17 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             }
 
             // Add a refresh button
-            $refreshButton = new LiteralField('RefreshButton', '<br/>' . $this->ButtonHelper(
-                    $this->Link() . '?refresh=true', _t('SparkPostAdmin.REFRESH', 'Force data refresh from the API')
-                )
-            );
+            $refreshButton = new LiteralField('RefreshButton', $this->ButtonHelper(
+                $this->Link() . '?refresh=true',
+                _t('SparkPostAdmin.REFRESH', 'Force data refresh from the API')
+            ));
             $settingsTab->push($refreshButton);
 
             $fields->addFieldToTab('Root', $settingsTab);
         }
 
         // Tab nav in CMS is rendered through separate template
-        $root->setTemplate('CMSTabSet');
+        $root->setTemplate('SilverStripe\\Forms\\CMSTabSet');
 
         // Manage tabs state
         $actionParam = $this->getRequest()->param('Action');
@@ -192,18 +249,17 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
 
         $actions = new FieldList();
 
-        // Create cms form
-        $form = CMSForm::create(
-                $this, 'EditForm', $fields, $actions
-            )->setHTMLID('Form_EditForm');
-        $form->setResponseNegotiator($this->getResponseNegotiator());
-        $form->addExtraClass('cms-edit-form');
+
+        // Build replacement form
+        $form = Form::create(
+            $this,
+            'EditForm',
+            $fields,
+            new FieldList()
+        )->setHTMLID('Form_EditForm');
+        $form->addExtraClass('cms-edit-form fill-height');
         $form->setTemplate($this->getTemplatesWithSuffix('_EditForm'));
-        // Tab nav in CMS is rendered through separate template
-        if ($form->Fields()->hasTabset()) {
-            $form->Fields()->findOrMakeTab('Root')->setTemplate('CMSTabSet');
-        }
-        $form->addExtraClass('center ss-tabset cms-tabset ' . $this->BaseCSSClasses());
+        $form->addExtraClass('ss-tabset cms-tabset ' . $this->BaseCSSClasses());
         $form->setAttribute('data-pjax-fragment', 'CurrentForm');
 
         $this->extend('updateEditForm', $form);
@@ -212,11 +268,23 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     }
 
     /**
-     * @return Zend_Cache_Frontend
+     * Get logger
+     *
+     * @return  Psr\Log\LoggerInterface
+     */
+    public function getLogger()
+    {
+        return $this->logger;
+    }
+
+    /**
+     * Get the cache
+     *
+     * @return Psr\SimpleCache\CacheInterface
      */
     public function getCache()
     {
-        return SS_Cache::factory(__CLASS__);
+        return $this->cache;
     }
 
     /**
@@ -236,32 +304,32 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
      *
      * @param string $method
      * @param array $params
-     * @param array $tags
      * @param int $expireInSeconds
      * @return array
      */
-    protected function getCachedData($method, $params, $tags = [], $expireInSeconds = 60)
+    protected function getCachedData($method, $params, $expireInSeconds = 60)
     {
         $enabled = $this->getCacheEnabled();
         if ($enabled) {
             $cache = $this->getCache();
             $key = md5(serialize($params));
-            $cacheResult = $cache->load($key);
+            $cacheResult = $cache->get($key);
         }
         if ($enabled && $cacheResult) {
             $data = unserialize($cacheResult);
         } else {
             try {
-                $data = $this->getClient()->$method($params);
+                $client = SparkPostHelper::getClient();
+                $data = $client->$method($params);
             } catch (Exception $ex) {
                 $this->lastException = $ex;
-                SS_Log::log($ex, SS_Log::DEBUG);
+                $this->getLogger()->debug($ex);
                 $data = false;
             }
 
             //5 minutes cache
             if ($enabled) {
-                $cache->save(serialize($data), $key, $tags, $expireInSeconds);
+                $cache->set($key, serialize($data), $expireInSeconds);
             }
         }
 
@@ -274,7 +342,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         if (!$params) {
             $params = [];
         }
-        $data = Session::get(__CLASS__ . '.Search');
+        $data = $this->getSession()->get(__class__ . '.Search');
         if (!$data) {
             $data = [];
         }
@@ -296,7 +364,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
 
     public function getParam($name, $default = null)
     {
-        $data = Session::get(__CLASS__ . '.Search');
+        $data = $this->getSession()->get(__class__ . '.Search');
         if (!$data) {
             return $default;
         }
@@ -312,7 +380,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
 
         $fields = new CompositeField();
         $fields->push($from = new DateField('params[from]', _t('SparkPostAdmin.DATEFROM', 'From'), $this->getParam('from')));
-        $from->setConfig('min', date('Y-m-d', strtotime('-10 days')));
+        // $from->setConfig('min', date('Y-m-d', strtotime('-10 days')));
 
         $fields->push(new DateField('params[to]', _t('SparkPostAdmin.DATETO', 'To'), $to = $this->getParam('to')));
 
@@ -326,7 +394,8 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             $recipients->setAttribute('placeholder', 'recipient@example.com,other@example.com');
         }
 
-        if (!SparkPostMailer::config()->subaccount_id && !in_array('subaccounts', $disabled_filters)) {
+        // Only allow filtering by subaccount if a master key is defined
+        if (SparkPostHelper::config()->master_api_key && !in_array('subaccounts', $disabled_filters)) {
             $fields->push($subaccounts = new TextField('params[subaccounts]', _t('SparkPostAdmin.SUBACCOUNTS', 'Subaccounts'), $this->getParam('subaccounts')));
             $subaccounts->setAttribute('placeholder', '101,102');
         }
@@ -336,7 +405,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             500 => 500,
             1000 => 1000,
             10000 => 10000,
-            ), $this->getParam('per_page', 100)));
+        ), $this->getParam('per_page', 100)));
 
         foreach ($fields->FieldList() as $field) {
             $field->addExtraClass('no-change-track');
@@ -375,8 +444,9 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             }
         }
 
-        Session::set(__CLASS__ . '.Search', $params);
-        Session::save();
+        $this->getSession()->set(__class__ . '.Search', $params);
+        $this->getSession()->save($this->getRequest());
+
         return $this->redirectBack();
     }
 
@@ -391,7 +461,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     {
         $params = $this->getParams();
 
-        $messages = $this->getCachedData('searchMessageEvents', $params, [self::MESSAGE_TAG], 60 * self::MESSAGE_CACHE_MINUTES);
+        $messages = $this->getCachedData('searchMessageEvents', $params, 60 * self::MESSAGE_CACHE_MINUTES);
         if ($messages === false) {
             if ($this->lastException) {
                 return $this->lastException->getMessage();
@@ -443,7 +513,8 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
                 'name' => _t('SparkPostAdmin.ACCESS', "Access to '{title}' section", ['title' => $title]),
                 'category' => _t('Permission.CMS_ACCESS_CATEGORY', 'CMS Access'),
                 'help' => _t(
-                    'SparkPostAdmin.ACCESS_HELP', 'Allow use of SparkPost admin section'
+                    'SparkPostAdmin.ACCESS_HELP',
+                    'Allow use of SparkPost admin section'
                 )
             ],
         ];
@@ -471,7 +542,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
      */
     protected function ButtonHelper($link, $text, $confirm = false)
     {
-        $link = '<a class="ss-ui-button" href="' . $link . '"';
+        $link = '<a class="btn btn-primary" href="' . $link . '"';
         if ($confirm) {
             $link .= ' onclick="return confirm(\'' . _t('SparkPostAdmin.CONFIRM_MSG', 'Are you sure?') . '\')"';
         }
@@ -496,8 +567,13 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
      */
     public function canView($member = null)
     {
-        $mailer = Email::mailer();
-        if (!$mailer instanceof SparkPostMailer) {
+        $mailer = SparkPostHelper::getMailer();
+        // Another custom mailer has been set
+        if (!$mailer instanceof SwiftMailer) {
+            return false;
+        }
+        // Doesn't use the proper transport
+        if (!$mailer->getSwiftMailer()->getTransport() instanceof SparkPostSwiftTransport) {
             return false;
         }
         return Permission::check("CMS_ACCESS_SparkPost", 'any', $member);
@@ -519,7 +595,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
      */
     public function WebhookInstalled()
     {
-        $list = $this->getCachedData('listAllWebhooks', null, [self::WEBHOOK_TAG], 60 * self::WEBHOOK_CACHE_MINUTES);
+        $list = $this->getCachedData('listAllWebhooks', null, 60 * self::WEBHOOK_CACHE_MINUTES);
 
         if (empty($list)) {
             return false;
@@ -582,13 +658,13 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     {
         $fields = new CompositeField();
         $fields->push(new LiteralField('Info', $this->MessageHelper(
-                _t('SparkPostAdmin.WebhookNotInstalled', 'Webhook is not installed. It should be configured using the following url {url}. This url must be publicly visible to be used as a hook.', ['url' => $this->WebhookUrl()]), 'bad'
-            )
-        ));
-        $fields->push(new LiteralField('doInstallHook', '<br/>' . $this->ButtonHelper(
-                $this->Link('doInstallHook'), _t('SparkPostAdmin.DOINSTALL_WEBHOOK', 'Install webhook')
-            )
-        ));
+            _t('SparkPostAdmin.WebhookNotInstalled', 'Webhook is not installed. It should be configured using the following url {url}. This url must be publicly visible to be used as a hook.', ['url' => $this->WebhookUrl()]),
+            'bad'
+        )));
+        $fields->push(new LiteralField('doInstallHook', $this->ButtonHelper(
+            $this->Link('doInstallHook'),
+            _t('SparkPostAdmin.DOINSTALL_WEBHOOK', 'Install webhook')
+        )));
         return $fields;
     }
 
@@ -598,7 +674,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             return $this->redirectBack();
         }
 
-        $client = $this->getClient();
+        $client = SparkPostHelper::getClient();
 
         $url = $this->WebhookUrl();
         $description = SiteConfig::current_site_config()->Title;
@@ -609,9 +685,9 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             } else {
                 $client->createSimpleWebhook($description, $url);
             }
-            $this->getCache()->clean('matchingTag', [self::WEBHOOK_TAG]);
+            $this->getCache()->clear();
         } catch (Exception $ex) {
-            SS_Log::log($ex, SS_Log::DEBUG);
+            $this->getLogger()->debug($ex);
         }
 
         return $this->redirectBack();
@@ -626,13 +702,14 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     {
         $fields = new CompositeField();
         $fields->push(new LiteralField('Info', $this->MessageHelper(
-                _t('SparkPostAdmin.WebhookInstalled', 'Webhook is installed and accessible at the following url {url}.', ['url' => $this->WebhookUrl()]), 'good'
-            )
-        ));
-        $fields->push(new LiteralField('doUninstallHook', '<br/>' . $this->ButtonHelper(
-                $this->Link('doUninstallHook'), _t('SparkPostAdmin.DOUNINSTALL_WEBHOOK', 'Uninstall webhook'), true)
-            )
-        );
+            _t('SparkPostAdmin.WebhookInstalled', 'Webhook is installed and accessible at the following url {url}.', ['url' => $this->WebhookUrl()]),
+            'good'
+        )));
+        $fields->push(new LiteralField('doUninstallHook', $this->ButtonHelper(
+            $this->Link('doUninstallHook'),
+            _t('SparkPostAdmin.DOUNINSTALL_WEBHOOK', 'Uninstall webhook'),
+            true
+        )));
         return $fields;
     }
 
@@ -642,16 +719,16 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             return $this->redirectBack();
         }
 
-        $client = $this->getClient();
+        $client = SparkPostHelper::getClient();
 
         try {
             $el = $this->WebhookInstalled();
             if ($el && !empty($el['id'])) {
                 $client->deleteWebhook($el['id']);
             }
-            $this->getCache()->clean('matchingTag', [self::WEBHOOK_TAG]);
+            $this->getCache()->clear();
         } catch (Exception $ex) {
-            SS_Log::log($ex, SS_Log::DEBUG);
+            $this->getLogger()->debug($ex);
         }
 
         return $this->redirectBack();
@@ -664,9 +741,9 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
      */
     public function SendingDomainInstalled()
     {
-        $client = $this->getClient();
+        $client = SparkPostHelper::getClient();
 
-        $domain = $this->getCachedData('getSendingDomain', $this->getDomain(), [self::SENDINGDOMAIN_TAG], 60 * self::SENDINGDOMAIN_CACHE_MINUTES);
+        $domain = $this->getCachedData('getSendingDomain', $this->getDomain(), 60 * self::SENDINGDOMAIN_CACHE_MINUTES);
 
         if (empty($domain)) {
             return false;
@@ -681,7 +758,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
      */
     public function VerifySendingDomain()
     {
-        $client = $this->getClient();
+        $client = SparkPostHelper::getClient();
 
         $host = $this->getDomain();
 
@@ -703,7 +780,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         $defaultDomain = $this->getDomain();
         $defaultDomainInfos = null;
 
-        $domains = $this->getCachedData('listAllSendingDomains', null, [self::SENDINGDOMAIN_TAG], 60 * self::SENDINGDOMAIN_CACHE_MINUTES);
+        $domains = $this->getCachedData('listAllSendingDomains', null, 60 * self::SENDINGDOMAIN_CACHE_MINUTES);
 
         $fields = new CompositeField();
 
@@ -735,6 +812,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         $config->addComponent($columns = new GridFieldDataColumns());
         $columns->setDisplayFields(ArrayLib::valuekey(['Domain', 'SPF', 'DKIM', 'Compliance', 'Verified']));
         $domainsList = new GridField('SendingDomains', _t('SparkPostAdmin.ALL_SENDING_DOMAINS', 'Configured sending domains'), $list, $config);
+        $domainsList->addExtraClass('mb-2');
         $fields->push($domainsList);
 
         if (!$defaultDomainInfos) {
@@ -766,7 +844,11 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
      */
     public function getDomainFromHost()
     {
-        $host = parse_url(Director::protocolAndHost(), PHP_URL_HOST);
+        $base = Environment::getEnv('SS_BASE_URL');
+        if(!$base) {
+            $base = Director::protocolAndHost();
+        }
+        $host = parse_url($base, PHP_URL_HOST);
         $hostParts = explode('.', $host);
         $parts = count($hostParts);
         if ($parts < 2) {
@@ -783,7 +865,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
      */
     public function getDomainFromEmail()
     {
-        $email = SparkPostMailer::resolveDefaultFromEmail();
+        $email = SparkPostHelper::resolveDefaultFromEmail(null, false);
         if ($email) {
             $domain = substr(strrchr($email, "@"), 1);
             return $domain;
@@ -816,13 +898,13 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         $host = $this->getDomain();
 
         $fields->push(new LiteralField('Info', $this->MessageHelper(
-                _t('SparkPostAdmin.DomainNotInstalled', 'Default sending domain {domain} is not installed.', ['domain' => $host]), "bad")
-            )
-        );
-        $fields->push(new LiteralField('doInstallDomain', '<br/>' . $this->ButtonHelper(
-                $this->Link('doInstallDomain'), _t('SparkPostAdmin.DOINSTALLDOMAIN', 'Install domain'))
-            )
-        );
+            _t('SparkPostAdmin.DomainNotInstalled', 'Default sending domain {domain} is not installed.', ['domain' => $host]),
+            "bad"
+        )));
+        $fields->push(new LiteralField('doInstallDomain', $this->ButtonHelper(
+            $this->Link('doInstallDomain'),
+            _t('SparkPostAdmin.DOINSTALLDOMAIN', 'Install domain')
+        )));
     }
 
     public function doInstallDomain()
@@ -831,7 +913,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             return $this->redirectBack();
         }
 
-        $client = $this->getClient();
+        $client = SparkPostHelper::getClient();
 
         $domain = $this->getDomain();
 
@@ -841,9 +923,9 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
 
         try {
             $client->createSimpleSendingDomain($domain);
-            $this->getCache()->clean('matchingTag', [self::SENDINGDOMAIN_TAG]);
+            $this->getCache()->clear();
         } catch (Exception $ex) {
-            SS_Log::log($ex, SS_Log::DEBUG);
+            $this->getLogger()->debug($ex);
         }
 
         return $this->redirectBack();
@@ -863,19 +945,20 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
 
         if ($domainInfos && $domainInfos['status']['ownership_verified']) {
             $fields->push(new LiteralField('Info', $this->MessageHelper(
-                    _t('SparkPostAdmin.DomainInstalled', 'Default domain {domain} is installed.', ['domain' => $domain]), 'good')
-                )
-            );
+                _t('SparkPostAdmin.DomainInstalled', 'Default domain {domain} is installed.', ['domain' => $domain]),
+                'good'
+            )));
         } else {
             $fields->push(new LiteralField('Info', $this->MessageHelper(
-                    _t('SparkPostAdmin.DomainInstalledBut', 'Default domain {domain} is installed, but is not properly configured.'), 'warning')
-                )
-            );
+                _t('SparkPostAdmin.DomainInstalledBut', 'Default domain {domain} is installed, but is not properly configured.'),
+                'warning'
+            )));
         }
-        $fields->push(new LiteralField('doUninstallHook', '<br/>' . $this->ButtonHelper(
-                $this->Link('doUninstallHook'), _t('SparkPostAdmin.DOUNINSTALLDOMAIN', 'Uninstall domain'), true)
-            )
-        );
+        $fields->push(new LiteralField('doUninstallHook', $this->ButtonHelper(
+            $this->Link('doUninstallHook'),
+            _t('SparkPostAdmin.DOUNINSTALLDOMAIN', 'Uninstall domain'),
+            true
+        )));
     }
 
     public function doUninstallDomain($data, Form $form)
@@ -884,7 +967,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             return $this->redirectBack();
         }
 
-        $client = $this->getClient();
+        $client = SparkPostHelper::getClient();
 
         $domain = $this->getDomain();
 
@@ -897,18 +980,12 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             if ($el) {
                 $client->deleteSendingDomain($domain);
             }
-            $this->getCache()->clean('matchingTag', [self::SENDINGDOMAIN_TAG]);
+            $this->getCache()->clear();
         } catch (Exception $ex) {
-            SS_Log::log($ex, SS_Log::DEBUG);
+            $this->getLogger()->debug($ex);
         }
 
         return $this->redirectBack();
     }
 
-    protected function clearAllCache()
-    {
-        $this->getCache()->clean('matchingTag', [self::MESSAGE_TAG]);
-        $this->getCache()->clean('matchingTag', [self::WEBHOOK_TAG]);
-        $this->getCache()->clean('matchingTag', [self::SENDINGDOMAIN_TAG]);
-    }
 }

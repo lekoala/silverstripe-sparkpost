@@ -1,14 +1,17 @@
 ---
 Name: sparkpost
 After:
-  - 'framework/*'
+  - 'emailconfig'
 ---
-Director:
+# Do not automatically inject the transport if no key is set
+#SilverStripe\Core\Injector\Injector:
+#  Swift_Transport: LeKoala\SparkPost\SparkPostSwiftTransport
+SilverStripe\Control\Director:
   rules:
-    'sparkpost//$Action/$ID/$Name': 'SparkPostController'
-SparkPostController:
+    '__sparkpost//$Action/$ID/$Name': 'LeKoala\SparkPost\SparkPostController'
+LeKoala\SparkPost\SparkPostController:
   log_level : 4
-SparkPostMailer:
+LeKoala\SparkPost\SparkPostHelper:
   api_key: ''
   subaccount_id: ''
   disable_sending : false
@@ -25,7 +28,7 @@ SparkPostMailer:
     inlineCss: true
   name_fallback: true
   inline_styles: false
-SparkPostAdmin:
+LeKoala\SparkPost\SparkPostAdmin:
   cache_enabled: true
   inbound_subdomain: 'emails'
   # Defaults to current url or default domain based on default sender

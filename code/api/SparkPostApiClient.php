@@ -1,5 +1,11 @@
 <?php
 
+namespace LeKoala\SparkPost\Api;
+
+use \Exception;
+use \InvalidArgumentException;
+use \DateTime;
+
 /**
  * A really simple SparkPost api client
  *
@@ -9,7 +15,7 @@ class SparkPostApiClient
 {
 
     // CLIENT SETTINGS
-    const CLIENT_VERSION = '0.1';
+    const CLIENT_VERSION = '0.2';
     const API_ENDPOINT = 'https://api.sparkpost.com/api/v1';
     const METHOD_GET = "GET";
     const METHOD_POST = "POST";
@@ -673,7 +679,7 @@ class SparkPostApiClient
 
     /**
      * List all inbound domains
-     * 
+     *
      * @return array
      */
     public function listInboundDomains()
@@ -757,7 +763,7 @@ class SparkPostApiClient
 
     /**
      * Delete a relay webhook
-     * 
+     *
      * @param int $id
      * @return array
      */
