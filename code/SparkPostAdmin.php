@@ -90,7 +90,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
      */
     private static $dependencies = [
         'logger' => '%$Psr\Log\LoggerInterface',
-        'cache' => '%$Psr\SimpleCache\CacheInterface.myCache', // see _config/cache.yml
+        'cache' => '%$Psr\SimpleCache\CacheInterface.sparkpost', // see _config/cache.yml
     ];
 
     /**
