@@ -238,5 +238,4 @@ class SparkPostHelper
 
         return 'postmaster@' . $dom;
     }
-
 }

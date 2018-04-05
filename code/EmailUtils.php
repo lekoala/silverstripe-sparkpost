@@ -42,7 +42,7 @@ class EmailUtils
         // Convert new lines for relevant tags
         $content = str_ireplace(['<br />', '<br/>', '<br>', '<table>', '</table>'], "\r\n", $content);
         // Avoid lots of spaces
-        $content = preg_replace('/[\r\n]+/', ' ', $content);
+        // $content = preg_replace('/[\r\n]+/', ' ', $content);
         // Replace links to keep them accessible
         $content = preg_replace('/<a[\s\S]*href="(.*?)"[\s\S]*>(.*)<\/a>/i', '$2 ($1)', $content);
         // Remove html tags
@@ -62,7 +62,7 @@ class EmailUtils
      */
     public static function get_displayname_from_rfc_email($rfc_email_string)
     {
-        $name = preg_match('/[\w\s]+/u', $rfc_email_string, $matches);
+        $name = preg_match('/[\w\s-\.]+/u', $rfc_email_string, $matches);
         $matches[0] = trim($matches[0]);
         return $matches[0];
     }

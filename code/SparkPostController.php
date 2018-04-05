@@ -312,5 +312,4 @@ class SparkPostController extends Controller
     {
         return $this->logger;
     }
-
 }

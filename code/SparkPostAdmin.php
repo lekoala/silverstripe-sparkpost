@@ -214,7 +214,6 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         );
 
         if ($this->CanConfigureApi()) {
-
             $settingsTab = new Tab('Settings', _t('SparkPostAdmin.Settings', 'Settings'));
 
             $domainTabData = $this->DomainTab();
@@ -845,7 +844,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     public function getDomainFromHost()
     {
         $base = Environment::getEnv('SS_BASE_URL');
-        if(!$base) {
+        if (!$base) {
             $base = Director::protocolAndHost();
         }
         $host = parse_url($base, PHP_URL_HOST);
@@ -987,5 +986,4 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
 
         return $this->redirectBack();
     }
-
 }

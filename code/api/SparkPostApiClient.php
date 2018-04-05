@@ -380,7 +380,7 @@ class SparkPostApiClient
      * 'per_page' : Number of results to return per page. Must be between 1 and 10,000 (inclusive).
      * 'reason' : Bounce/failure/rejection reason that will be matched using a wildcard (e.g., %reason%)
      * 'recipients' : delimited list of recipients to search.
-     * 'subaccounts' : 	delimited list of subaccount ID’s to search..
+     * 'subaccounts' :  delimited list of subaccount ID’s to search..
      * 'template_ids' : delimited list of template ID's to search.
      * 'timezone' : Standard timezone identification string
      * 'to' : Datetime in format of YYYY-MM-DDTHH:MM
@@ -954,7 +954,7 @@ class SparkPostApiClient
         $this->results[] = $decodedResult;
 
         if (isset($decodedResult['errors'])) {
-            $errors = array_map(function($item) use($data) {
+            $errors = array_map(function ($item) use ($data) {
                 $message = $item['message'];
                 // Prepend code to message
                 if (isset($item['code'])) {

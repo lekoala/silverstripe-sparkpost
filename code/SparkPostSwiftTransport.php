@@ -460,7 +460,6 @@ class SparkPostSwiftTransport implements Swift_Transport
         }
 
         foreach ($message->getChildren() as $child) {
-
             if ($child instanceof Swift_Attachment) {
                 $attachments[] = array(
                     'type' => $child->getContentType(),
@@ -500,12 +499,15 @@ class SparkPostSwiftTransport implements Swift_Transport
             ),
         );
 
-        if (!empty($cc))
+        if (!empty($cc)) {
             $sparkPostMessage['cc'] = $cc;
-        if (!empty($bcc))
+        }
+        if (!empty($bcc)) {
             $sparkPostMessage['bcc'] = $bcc;
-        if (!empty($headers))
+        }
+        if (!empty($headers)) {
             $sparkPostMessage['headers'] = $headers;
+        }
 
         if (count($attachments) > 0) {
             $sparkPostMessage['attachments'] = $attachments;
@@ -521,5 +523,4 @@ class SparkPostSwiftTransport implements Swift_Transport
     {
         return $this->resultApi;
     }
-
 }

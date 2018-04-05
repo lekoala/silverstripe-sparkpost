@@ -30,7 +30,6 @@ class SparkPostTest extends SapphireTest
         $swiftMailer = new \Swift_Mailer(new \Swift_MailTransport());
         $mailer->setSwiftMailer($swiftMailer);
         Injector::inst()->registerService($mailer, Mailer::class);
-
     }
     protected function tearDown()
     {
