@@ -14,7 +14,7 @@ class EmailUtils
      */
     public static function inline_styles($html)
     {
-        if (!class_exists("\\Pelago\\Emogrifier")) {
+        if (!class_exists(\Pelago\Emogrifier::class)) {
             throw new Exception("You must run composer require pelago/emogrifier");
         }
         $emogrifier = new \Pelago\Emogrifier();

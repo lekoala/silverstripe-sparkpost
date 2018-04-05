@@ -117,7 +117,7 @@ issue.
 It require the use of pelago\emogrifier so please install it if you plan to use this option.
 
 ## Compatibility
-Tested with 4.0
+Tested with 4.0 and 4.1
 
 For 3.x compatibility, use branch 1
 
