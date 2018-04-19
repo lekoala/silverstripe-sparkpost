@@ -6,6 +6,8 @@ use \Exception;
 use \InvalidArgumentException;
 use \DateTime;
 
+use SilverStripe\Core\Environment;
+
 /**
  * A really simple SparkPost api client
  *
@@ -17,6 +19,7 @@ class SparkPostApiClient
     // CLIENT SETTINGS
     const CLIENT_VERSION = '0.2';
     const API_ENDPOINT = 'https://api.sparkpost.com/api/v1';
+    const API_ENDPOINT_EU = 'https://api.eu.sparkpost.com/api/v1';
     const METHOD_GET = "GET";
     const METHOD_POST = "POST";
     const METHOD_PUT = "PUT";
@@ -902,7 +905,11 @@ class SparkPostApiClient
         curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
         curl_setopt($ch, CURLOPT_USERAGENT, 'SparkPostApiClient v' . self::CLIENT_VERSION);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_URL, self::API_ENDPOINT . '/' . $endpoint);
+        if (Environment::getEnv('SPARKPOST_EU')) {
+            curl_setopt($ch, CURLOPT_URL, self::API_ENDPOINT_EU . '/' . $endpoint);
+        } else {
+            curl_setopt($ch, CURLOPT_URL, self::API_ENDPOINT . '/' . $endpoint);
+        }
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, (int) $this->getCurlOption('connect_timeout'));
         curl_setopt($ch, CURLOPT_TIMEOUT, (int) $this->getCurlOption('timeout'));
 

@@ -24,6 +24,11 @@ You can also autoconfigure the module with the following environment variables
 
 By defining the Api Key, the module will register a new transport that will be used to send all emails.
 
+If you're using the SparkPost EU service you can change the API endpoint
+
+    # Will use https://api.eu.sparkpost.com/api/v1
+    SPARKPOST_EU=true
+
 ## Register the new mailer
 
 If you define the SPARKPOST_API_KEY variable, the mailer transport will be automatically registered.
