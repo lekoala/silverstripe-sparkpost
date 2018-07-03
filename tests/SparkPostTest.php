@@ -26,7 +26,7 @@ class SparkPostTest extends SapphireTest
         $this->testMailer = Injector::inst()->get(Mailer::class);
 
         // Ensure we have the right mailer
-        $mailer =  new SwiftMailer();
+        $mailer = new SwiftMailer();
         $swiftMailer = new \Swift_Mailer(new \Swift_MailTransport());
         $mailer->setSwiftMailer($swiftMailer);
         Injector::inst()->registerService($mailer, Mailer::class);
@@ -51,6 +51,21 @@ class SparkPostTest extends SapphireTest
         $result = $client->listAllSendingDomains();
 
         $this->assertTrue(is_array($result));
+    }
+
+    public function testTLSVersion()
+    {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, 'https://www.howsmyssl.com/a/check');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        $data = curl_exec($ch);
+        if (!$data) {
+            $this->markTestIncomplete('Error: "' . curl_error($ch) . '" - Code: ' . curl_errno($ch));
+            return;
+        }
+        curl_close($ch);
+        $json = json_decode($data);
+        $this->assertNotEquals("TLS 1.0", $json->tls_version);
     }
 
     public function testSending()
