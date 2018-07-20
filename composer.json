@@ -9,15 +9,14 @@
         "cms"
     ],
     "license": "MIT",
-    "authors": [
-        {
-            "name": "LeKoala",
-            "email": "thomas@lekoala.be"
-        }
-    ],
+    "authors": [{
+        "name": "LeKoala",
+        "email": "thomas@lekoala.be"
+    }],
     "require": {
         "php": ">=5.6",
         "silverstripe/framework": "^4.0",
+        "pelago/emogrifier": "^2.0",
         "composer/ca-bundle": "*"
     },
     "require-dev": {
@@ -31,7 +30,6 @@
         ]
     },
     "suggest": {
-        "pelago/emogrifier": "Inline styles for your emails",
         "lekoala/silverstripe-foundation-emails": "Use Foundation Emails as a base style for your emails",
         "lekoala/silverstripe-email-templates": "Email templates editables from the cms"
     },

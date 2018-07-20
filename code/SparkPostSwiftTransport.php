@@ -107,10 +107,6 @@ class SparkPostSwiftTransport implements Swift_Transport
         $sendCount = 0;
         $disableSending = $message->getHeaders()->has('X-SendingDisabled') || SparkPostHelper::config()->disable_sending;
 
-        if (SparkPostHelper::config()->enable_logging) {
-            $this->logMessageContent($message);
-        }
-
         $transmissionData = $this->getTransmissionFromMessage($message);
 
         /* @var $client LeKoala\SparkPost\Api\SparkPostApiClient */
@@ -127,6 +123,10 @@ class SparkPostSwiftTransport implements Swift_Transport
             $result = $client->createTransmission($transmissionData);
         }
         $this->resultApi = $result;
+
+        if (SparkPostHelper::config()->enable_logging) {
+            $this->logMessageContent($message, $result);
+        }
 
         $sendCount = $this->resultApi['total_accepted_recipients'];
 
@@ -152,9 +152,10 @@ class SparkPostSwiftTransport implements Swift_Transport
      * Log message content
      *
      * @param Swift_Mime_Message $message
+     * @param array $results Results from the api
      * @return void
      */
-    protected function logMessageContent(Swift_Mime_Message $message)
+    protected function logMessageContent(Swift_Mime_Message $message, $results = [])
     {
         $subject = $message->getSubject();
         $body = $message->getBody();
@@ -173,6 +174,10 @@ class SparkPostSwiftTransport implements Swift_Transport
         }
         if (!empty($params['recipients'])) {
             $logContent .= 'Recipients : ' . print_r($message->getTo(), true) . "\n";
+        }
+        $logContent .= 'Results:' . "\n";
+        foreach ($results as $resultKey => $resultValue) {
+            $logContent .= '  ' . $resultKey . ': ' . $resultValue . "\n";
         }
         $logContent .= '</pre>';
 
@@ -267,8 +272,6 @@ class SparkPostSwiftTransport implements Swift_Transport
 
     /**
      * Convert a Swift Message to a transmission
-     *
-     * https://jsapi.apiary.io/apis/sparkpostapi/introduction/subaccounts-coming-to-an-api-near-you-in-april!.html
      *
      * @param Swift_Mime_Message $message
      * @return array SparkPost Send Message
@@ -377,20 +380,30 @@ class SparkPostSwiftTransport implements Swift_Transport
             }
         }
 
-        // Always set some default content
-        if (!$bodyText && $bodyHtml && SparkPostHelper::config()->provide_plain) {
-            $bodyText = EmailsUtils::convert_html_to_text($bodyHtml);
+
+        // If we ask to provide plain, use our custom method instead of the provided one
+        if ($bodyHtml && SparkPostHelper::config()->provide_plain) {
+            $bodyText = EmailUtils::convert_html_to_text($bodyHtml);
+        }
+
+        // Should we inline css
+        if (!$inlineCss && SparkPostHelper::config()->inline_styles) {
+            $bodyHtml = EmailUtils::inline_styles($bodyHtml);
         }
 
         if ($message->getHeaders()->has('List-Unsubscribe')) {
             $headers['List-Unsubscribe'] = $message->getHeaders()->get('List-Unsubscribe')->getValue();
         }
 
+        $defaultParams = SparkPostHelper::config()->default_params;
+        if ($inlineCss !== null) {
+            $defaultParams['inline_css'] = $inlineCss;
+        }
+
+        // Build base transmission
         $sparkPostMessage = array(
             'recipients' => $recipients,
             'reply_to' => $reply_to,
-            'inline_css' => $inlineCss,
-            'tags' => $tags,
             'content' => array(
                 'from' => array(
                     'name' => $fromFirstName,
@@ -402,6 +415,10 @@ class SparkPostSwiftTransport implements Swift_Transport
             ),
         );
 
+        // Add default params
+        $sparkPostMessage = array_merge($defaultParams, $sparkPostMessage);
+
+        // Add remaining elements
         if (!empty($cc)) {
             $sparkPostMessage['cc'] = $cc;
         }
@@ -411,7 +428,6 @@ class SparkPostSwiftTransport implements Swift_Transport
         if (!empty($headers)) {
             $sparkPostMessage['headers'] = $headers;
         }
-
         if (count($attachments) > 0) {
             $sparkPostMessage['attachments'] = $attachments;
         }

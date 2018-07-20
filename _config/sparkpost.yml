@@ -17,17 +17,16 @@ LeKoala\SparkPost\SparkPostHelper:
   disable_sending : false
   enable_logging : false
   log_folder : 'silverstripe-cache/emails'
-  log_level : 4
   siteconfig_from: 'DefaultFromEmail'
   siteconfig_to: 'ContactEmail'
   provide_plain: true
+  # Params can use native format or use mappings defined by SparkPostApiClient
   default_params:
     trackOpens: true
     trackClicks: true
     transactional: true
-    inlineCss: true
-  name_fallback: true
-  inline_styles: false
+    inlineCss: false
+  inline_styles: true
 LeKoala\SparkPost\SparkPostAdmin:
   cache_enabled: true
   inbound_subdomain: 'emails'

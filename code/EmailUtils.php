@@ -2,6 +2,7 @@
 namespace LeKoala\SparkPost;
 
 use \Exception;
+use Pelago\Emogrifier;
 
 class EmailUtils
 {
@@ -9,15 +10,14 @@ class EmailUtils
     /**
      * Inline styles using Pelago Emogrifier
      *
+     * This is much better than the functionnality provided by SparkPost anyway
+     *
      * @param string $html
      * @return string
      */
     public static function inline_styles($html)
     {
-        if (!class_exists(\Pelago\Emogrifier::class)) {
-            throw new Exception("You must run composer require pelago/emogrifier");
-        }
-        $emogrifier = new \Pelago\Emogrifier();
+        $emogrifier = new Emogrifier();
         $emogrifier->setHtml($html);
         $emogrifier->disableInvisibleNodeRemoval();
         $emogrifier->enableCssToHtmlMapping();
@@ -41,12 +41,12 @@ class EmailUtils
         $content = html_entity_decode($content);
         // Convert new lines for relevant tags
         $content = str_ireplace(['<br />', '<br/>', '<br>', '<table>', '</table>'], "\r\n", $content);
-        // Avoid lots of spaces
-        // $content = preg_replace('/[\r\n]+/', ' ', $content);
         // Replace links to keep them accessible
         $content = preg_replace('/<a[\s\S]*href="(.*?)"[\s\S]*>(.*)<\/a>/i', '$2 ($1)', $content);
         // Remove html tags
         $content = strip_tags($content);
+        // Avoid lots of spaces
+        $content = preg_replace('/^[\s]+(\S)/m', "$1", $content);
         // Trim content so that it's nice
         $content = trim($content);
         return $content;

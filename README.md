@@ -87,8 +87,10 @@ if your site is in dev mode. It will load sample data from the API.
 Please ensure that the url for the webhook is properly configured if required
 by using the following configuration
 
+    ```yaml
     LeKoala\SparkPost\SparkPostAdmin:
       webhook_base_url: 'https://my.domain.com/'
+    ```
 
 You can also define the following environment variable to log all incoming payload into a given
 directory. Make sure the directory exists. It is relative to your base folder.
@@ -111,15 +113,17 @@ to this subaccount.
 ## Inlining styles
 
 Although SparkPost can inline styles for you, it may not work properly for complex
-style sheet, such as Foundation Emails. The following config can help you with this
-issue.
+style sheet, such as Foundation Emails. This is why the package pelago\emogrifier
+is not required by default and styles are inlined in php to get the best results.
+
+If you want to restore built-in functionnality, use this:
 
    ```yaml
    LeKoala\SparkPost\SparkPostHelper:
-     inline_styles: true
+      inline_styles: false
+      default_params:
+        inlineCss: true
    ```
-
-It require the use of pelago\emogrifier so please install it if you plan to use this option.
 
 ## Compatibility
 Tested with 4.0 and 4.1
