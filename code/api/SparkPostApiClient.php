@@ -289,8 +289,9 @@ class SparkPostApiClient
      * 'useDraftTemplate'
      * 'inlineCss'
      *
+     * @link https://developers.sparkpost.com/api/transmissions.html
      * @param array $data
-     * @return array
+     * @return array An array containing 3 keys: total_rejected_recipients, total_accepted_recipients, id
      */
     public function createTransmission($data)
     {

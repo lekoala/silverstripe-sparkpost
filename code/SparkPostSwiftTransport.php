@@ -1,13 +1,18 @@
 <?php
 namespace LeKoala\SparkPost;
 
-use \Swift_Events_EventDispatcher;
-use \Swift_Events_EventListener;
-use \Swift_Events_SendEvent;
-use \Swift_Mime_Message;
+use Exception;
+use \Swift_MimePart;
 use \Swift_Transport;
 use \Swift_Attachment;
-use \Swift_MimePart;
+use \Swift_Mime_Message;
+use \Swift_Events_SendEvent;
+use Psr\Log\LoggerInterface;
+use \Swift_Events_EventListener;
+use \Swift_Events_EventDispatcher;
+use SilverStripe\Control\Director;
+use SilverStripe\Assets\FileNameFilter;
+use SilverStripe\Core\Injector\Injector;
 use LeKoala\SparkPost\Api\SparkPostApiClient;
 
 /**
@@ -38,12 +43,12 @@ class SparkPostSwiftTransport implements Swift_Transport
     protected $client;
 
     /**
-     * @var [type]
+     * @var array
      */
     protected $resultApi;
 
     /**
-     * @var [type]
+     * @var string
      */
     protected $fromEmail;
 
@@ -100,21 +105,32 @@ class SparkPostSwiftTransport implements Swift_Transport
         }
 
         $sendCount = 0;
+        $disableSending = $message->getHeaders()->has('X-SendingDisabled') || SparkPostHelper::config()->disable_sending;
+
+        if (SparkPostHelper::config()->enable_logging) {
+            $this->logMessageContent($message);
+        }
 
         $transmissionData = $this->getTransmissionFromMessage($message);
 
         /* @var $client LeKoala\SparkPost\Api\SparkPostApiClient */
         $client = $this->client;
 
-        try {
+        if ($disableSending) {
+            $result = [
+                'total_rejected_recipients' => 0,
+                'total_accepted_recipients' => 0,
+                'id' => microtime(),
+                'disabled' => true,
+            ];
+        } else {
             $result = $client->createTransmission($transmissionData);
-            $this->resultApi = $result;
-        } catch (\Exception $e) {
-            throw $e;
         }
+        $this->resultApi = $result;
 
         $sendCount = $this->resultApi['total_accepted_recipients'];
 
+        // TODO: might not be the best way to return fromEmail
         if ($this->resultApi['total_rejected_recipients'] > 0) {
             $failedRecipients[] = $this->fromEmail;
         }
@@ -132,202 +148,69 @@ class SparkPostSwiftTransport implements Swift_Transport
         return $sendCount;
     }
 
-     /**
-     * Send the email through SparkPost
+    /**
+     * Log message content
      *
-     * TODO: verify if we need to add some functionnalities back into new "send" method
-     *
-     * @param string|array $to
-     * @param string $from
-     * @param string $subject
-     * @param string $plainContent
-     * @param array $attachedFiles
-     * @param array $customheaders
-     * @param bool $inlineImages
-     * @return array|bool
+     * @param Swift_Mime_Message $message
+     * @return void
      */
-    public function old_send($email)
+    protected function logMessageContent(Swift_Mime_Message $message)
     {
-        $original_to = $to;
+        $subject = $message->getSubject();
+        $body = $message->getBody();
+        $contentType = $this->getMessagePrimaryContentType($message);
 
-        // Process recipients
-        $to_array = [];
-        $to_array = $this->appendTo($to_array, $to);
+        $logContent = $body;
 
-        // Handle CC/BCC/BCC ALL
-        if (isset($customheaders['Cc'])) {
-            $to_array = $this->appendTo($to_array, $customheaders['Cc']);
-            unset($customheaders['Cc']);
+        // Append some extra information at the end
+        $logContent .= '<hr><pre>Debug infos:' . "\n\n";
+        $logContent .= 'To : ' . print_r($message->getTo(), true) . "\n";
+        $logContent .= 'Subject : ' . $subject . "\n";
+        $logContent .= 'From : ' . print_r($message->getFrom(), true) . "\n";
+        $logContent .= 'Headers:' . "\n";
+        foreach ($message->getHeaders()->getAll() as $header) {
+            $logContent .= '  ' . $header->getFieldName() . ': ' . $header->getFieldBody() . "\n";
         }
-        if (isset($customheaders['Bcc'])) {
-            $to_array = $this->appendTo($to_array, $customheaders['Bcc']);
-            unset($customheaders['Bcc']);
+        if (!empty($params['recipients'])) {
+            $logContent .= 'Recipients : ' . print_r($message->getTo(), true) . "\n";
         }
-        $bcc_email = Email::config()->bcc_all_emails_to;
-        if ($bcc_email) {
-            $to_array = $this->appendTo($to_array, $bcc_email);
-        }
+        $logContent .= '</pre>';
 
-        // Process sender
-        $from = $this->resolveDefaultFromEmail($from);
+        $logFolder = SparkPostHelper::getLogFolder();
 
-        // Create params
-        $default_params = [];
-        if (self::config()->default_params) {
-            $default_params = self::config()->default_params;
-        }
-        $params = array_merge($default_params, [
-            "subject" => $subject,
-            "from" => $from,
-            "recipients" => $to_array
-        ]);
+        // Generate filename
+        $filter = new FileNameFilter();
+        $title = substr($filter->filter($subject), 0, 35);
+        $logName = date('Ymd_His') . '_' . $title;
 
-        // Inject additional params into message
-        if (isset($customheaders['X-SparkPostMailer'])) {
-            $params = array_merge($params, $customheaders['X-SparkPostMailer']);
-            unset($customheaders['X-SparkPostMailer']);
-        }
-
-        // Always set some default content
-        if (!$plainContent && $htmlContent && self::config()->provide_plain) {
-            $plainContent = $this->convertHtmlToText($htmlContent);
-        }
-
-        if ($plainContent) {
-            $params['text'] = $plainContent;
-        }
-        if ($htmlContent) {
-            if (self::config()->inline_styles) {
-                try {
-                    $html = $this->inlineStyles($htmlContent);
-
-                    // Prevent SparkPost from inlining twice
-                    $params['default_params']['inlineCss'] = false;
-                } catch (Exception $ex) {
-                    // If it fails, let SparkPost do the job
-                    $params['default_params']['inlineCss'] = true;
+        // Store attachments if any
+        $attachments = $message->getChildren();
+        if (!empty($attachments)) {
+            $logContent .= '<hr />';
+            foreach ($attachments as $attachment) {
+                if ($attachment instanceof Swift_Attachment) {
+                    file_put_contents($logFolder . '/' . $logName . '_' . $attachment->getFilename(), $attachment->getBody());
+                    $logContent .= 'File : ' . $attachment->getFilename() . '<br/>';
                 }
             }
-
-            $params['html'] = $htmlContent;
         }
 
-        // Handle files attachments
-        if ($attachedFiles) {
-            $attachments = [];
+        // Store it
+        $ext = ($contentType == 'text/html') ? 'html' : 'txt';
+        $r = file_put_contents($logFolder . '/' . $logName . '.' . $ext, $logContent);
 
-            // Include any specified attachments as additional parts
-            foreach ($attachedFiles as $file) {
-                if (isset($file['tmp_name']) && isset($file['name'])) {
-                    $attachments[] = $this->encodeFileForEmail($file['tmp_name'], $file['name']);
-                } else {
-                    $attachments[] = $this->encodeFileForEmail($file);
-                }
-            }
-
-            $params['attachments'] = $attachments;
+        if (!$r && Director::isDev()) {
+            throw new Exception('Failed to store email in ' . $logFolder);
         }
-
-        // Handle Reply-To custom header properly
-        if (isset($customheaders['Reply-To'])) {
-            $params['replyTo'] = $customheaders['Reply-To'];
-            unset($customheaders['Reply-To']);
-        }
-
-        // Handle other custom headers
-        if (isset($customheaders['Metadata'])) {
-            if (!is_array($customheaders['Metadata'])) {
-                throw new Exception("Metadata parameter must be an associative array");
-            }
-            $params['metadata'] = $customheaders['Metadata'];
-            unset($customheaders['Metadata']);
-        }
-        if (isset($customheaders['Campaign'])) {
-            $params['campaign'] = $customheaders['Campaign'];
-            unset($customheaders['Campaign']);
-        }
-        if (isset($customheaders['Description'])) {
-            $params['description'] = $customheaders['Description'];
-            unset($customheaders['Description']);
-        }
-
-
-        if ($customheaders) {
-            $params['customHeaders'] = $customheaders;
-        }
-
-        $sendingDisabled = false;
-        if (isset($customheaders['X-SendingDisabled']) && $customheaders['X-SendingDisabled']) {
-            $sendingDisabled = $sendingDisabled;
-            unset($customheaders['X-SendingDisabled']);
-        }
-
-        if (self::config()->enable_logging) {
-            // Append some extra information at the end
-            $logContent = $htmlContent;
-            $logContent .= '<hr><pre>Debug infos:' . "\n\n";
-            $logContent .= 'To : ' . print_r($original_to, true) . "\n";
-            $logContent .= 'Subject : ' . $subject . "\n";
-            $logContent .= 'Headers : ' . print_r($customheaders, true) . "\n";
-            if (!empty($params['from'])) {
-                $logContent .= 'From : ' . $params['from'] . "\n";
-            }
-            if (!empty($params['recipients'])) {
-                $logContent .= 'Recipients : ' . print_r($params['recipients'], true) . "\n";
-            }
-            $logContent .= '</pre>';
-
-            $logFolder = $this->getLogFolder();
-
-            // Generate filename
-            $filter = new FileNameFilter();
-            $title = substr($filter->filter($subject), 0, 35);
-            $logName = date('Ymd_His') . '_' . $title;
-
-            // Store attachments if any
-            if (!empty($params['attachments'])) {
-                $logContent .= '<hr />';
-                foreach ($params['attachments'] as $attachment) {
-                    file_put_contents($logFolder . '/' . $logName . '_' . $attachment['name'], base64_decode($attachment['data']));
-
-                    $logContent .= 'File : ' . $attachment['name'] . '<br/>';
-                }
-            }
-
-            // Store it
-            $ext = empty($htmlContent) ? 'txt' : 'html';
-
-            $r = file_put_contents($logFolder . '/' . $logName . '.' . $ext, $logContent);
-
-            if (!$r && Director::isDev()) {
-                throw new Exception('Failed to store email in ' . $logFolder);
-            }
-        }
-
-        if (self::getSendingDisabled() || $sendingDisabled) {
-            $customheaders['X-SendingDisabled'] = true;
-            return array($original_to, $subject, $htmlContent, $customheaders);
-        }
-
-        $logLevel = self::config()->log_level ? self::config()->log_level : 7;
-
-        try {
-            $result = $this->getClient()->createTransmission($params);
-
-            if (!empty($result['total_accepted_recipients'])) {
-                return [$original_to, $subject, $htmlContent, $customheaders, $result];
-            }
-
-            SS_Log::log("No recipient was accepted for transmission " . $result['id'], $logLevel);
-        } catch (Exception $ex) {
-            $this->lastException = $ex;
-            SS_Log::log($ex->getMessage(), $logLevel);
-        }
-
-        return false;
     }
 
-
+    /**
+     * @return LoggerInterface
+     */
+    public function getLogger()
+    {
+        return Injector::inst()->get(LoggerInterface::class)->withName('SparkPost');
+    }
 
     /**
      * @param Swift_Events_EventListener $plugin
@@ -383,6 +266,8 @@ class SparkPostSwiftTransport implements Swift_Transport
     }
 
     /**
+     * Convert a Swift Message to a transmission
+     *
      * https://jsapi.apiary.io/apis/sparkpostapi/introduction/subaccounts-coming-to-an-api-near-you-in-april!.html
      *
      * @param Swift_Mime_Message $message
@@ -411,12 +296,28 @@ class SparkPostSwiftTransport implements Swift_Transport
         $tags = array();
         $inlineCss = null;
 
+        // Mandrill compatibility
+        // @link https://mandrill.zendesk.com/hc/en-us/articles/205582467-How-to-Use-Tags-in-Mandrill
         if ($message->getHeaders()->has('X-MC-Tags')) {
             /** @var \Swift_Mime_Headers_UnstructuredHeader $tagsHeader */
             $tagsHeader = $message->getHeaders()->get('X-MC-Tags');
             $tags = explode(',', $tagsHeader->getValue());
         }
+        if ($message->getHeaders()->has('X-MC-InlineCSS')) {
+            $inlineCss = $message->getHeaders()->get('X-MC-InlineCSS')->getValue();
+        }
 
+        // Handle MSYS headers
+        // @link https://developers.sparkpost.com/api/smtp-api.html
+        if ($message->getHeaders()->has('X-MSYS-API')) {
+            $msysHeader = json_decode($message->getHeaders()->get('X-MSYS-API')->getValue(), JSON_OBJECT_AS_ARRAY);
+            if (!empty($msysHeader['tags'])) {
+                $tags = array_merge($tags, $msysHeader['tags']);
+            }
+        }
+
+        // Build recipients list
+        // @link https://developers.sparkpost.com/api/recipient-lists.html
         foreach ($toAddresses as $toEmail => $toName) {
             $recipients[] = array(
                 'address' => array(
@@ -426,6 +327,7 @@ class SparkPostSwiftTransport implements Swift_Transport
                 'tags' => $tags,
             );
         }
+
         $reply_to = null;
         foreach ($replyToAddresses as $replyToEmail => $replyToName) {
             if ($replyToName) {
@@ -475,12 +377,13 @@ class SparkPostSwiftTransport implements Swift_Transport
             }
         }
 
-        if ($message->getHeaders()->has('List-Unsubscribe')) {
-            $headers['List-Unsubscribe'] = $message->getHeaders()->get('List-Unsubscribe')->getValue();
+        // Always set some default content
+        if (!$bodyText && $bodyHtml && SparkPostHelper::config()->provide_plain) {
+            $bodyText = EmailsUtils::convert_html_to_text($bodyHtml);
         }
 
-        if ($message->getHeaders()->has('X-MC-InlineCSS')) {
-            $inlineCss = $message->getHeaders()->get('X-MC-InlineCSS')->getValue();
+        if ($message->getHeaders()->has('List-Unsubscribe')) {
+            $headers['List-Unsubscribe'] = $message->getHeaders()->get('List-Unsubscribe')->getValue();
         }
 
         $sparkPostMessage = array(
