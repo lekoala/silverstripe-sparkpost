@@ -194,8 +194,9 @@ class SparkPostSwiftTransport implements Swift_Transport
             $logContent .= '<hr />';
             foreach ($attachments as $attachment) {
                 if ($attachment instanceof Swift_Attachment) {
-                    file_put_contents($logFolder . '/' . $logName . '_' . $attachment->getFilename(), $attachment->getBody());
-                    $logContent .= 'File : ' . $attachment->getFilename() . '<br/>';
+                    $attachmentDestination = $logFolder . '/' . $logName . '_' . $attachment->getFilename();
+                    file_put_contents($attachmentDestination, $attachment->getBody());
+                    $logContent .= 'File : <a href="' . $attachmentDestination . '">' . $attachment->getFilename() . '</a><br/>';
                 }
             }
         }
