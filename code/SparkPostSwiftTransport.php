@@ -302,23 +302,27 @@ class SparkPostSwiftTransport implements Swift_Transport
         $inlineCss = null;
 
         // Mandrill compatibility
+        // Data is merge with transmission and removed from headers
         // @link https://mandrill.zendesk.com/hc/en-us/articles/205582467-How-to-Use-Tags-in-Mandrill
         if ($message->getHeaders()->has('X-MC-Tags')) {
-            /** @var \Swift_Mime_Headers_UnstructuredHeader $tagsHeader */
             $tagsHeader = $message->getHeaders()->get('X-MC-Tags');
             $tags = explode(',', $tagsHeader->getValue());
+            $message->getHeaders()->remove('X-MC-Tags');
         }
         if ($message->getHeaders()->has('X-MC-Metadata')) {
-            /** @var \Swift_Mime_Headers_UnstructuredHeader $tagsHeader */
             $metadataHeader = $message->getHeaders()->get('X-MC-Metadata');
             $metadata = json_decode($metadataHeader->getValue(), JSON_OBJECT_AS_ARRAY);
+            $message->getHeaders()->remove('X-MC-Metadata');
         }
         if ($message->getHeaders()->has('X-MC-InlineCSS')) {
             $inlineCss = $message->getHeaders()->get('X-MC-InlineCSS')->getValue();
+            $message->getHeaders()->remove('X-MC-InlineCSS');
         }
 
         // Handle MSYS headers
+        // Data is merge with transmission and removed from headers
         // @link https://developers.sparkpost.com/api/smtp-api.html
+        $msysHeader = [];
         if ($message->getHeaders()->has('X-MSYS-API')) {
             $msysHeader = json_decode($message->getHeaders()->get('X-MSYS-API')->getValue(), JSON_OBJECT_AS_ARRAY);
             if (!empty($msysHeader['tags'])) {
@@ -327,6 +331,7 @@ class SparkPostSwiftTransport implements Swift_Transport
             if (!empty($msysHeader['metadata'])) {
                 $metadata = array_merge($metadata, $msysHeader['metadata']);
             }
+            $message->getHeaders()->remove('X-MSYS-API');
         }
 
         // Build recipients list
@@ -398,9 +403,9 @@ class SparkPostSwiftTransport implements Swift_Transport
             }
         }
 
-
         // If we ask to provide plain, use our custom method instead of the provided one
         if ($bodyHtml && SparkPostHelper::config()->provide_plain) {
+            d($bodyText, EmailUtils::convert_html_to_text($bodyHtml));
             $bodyText = EmailUtils::convert_html_to_text($bodyHtml);
         }
 
@@ -422,7 +427,6 @@ class SparkPostSwiftTransport implements Swift_Transport
         // Build base transmission
         $sparkPostMessage = array(
             'recipients' => $recipients,
-            'reply_to' => $reply_to,
             'content' => array(
                 'from' => array(
                     'name' => $fromFirstName,
@@ -433,9 +437,15 @@ class SparkPostSwiftTransport implements Swift_Transport
                 'text' => $bodyText,
             ),
         );
+        if ($reply_to) {
+            $sparkPostMessage['reply_to'] = $reply_to;
+        }
 
         // Add default params
         $sparkPostMessage = array_merge($defaultParams, $sparkPostMessage);
+        if ($msysHeader) {
+            $sparkPostMessage = array_merge($sparkPostMessage, $msysHeader);
+        }
 
         // Add remaining elements
         if (!empty($cc)) {
@@ -447,6 +457,8 @@ class SparkPostSwiftTransport implements Swift_Transport
         if (count($attachments) > 0) {
             $sparkPostMessage['attachments'] = $attachments;
         }
+
+        d($sparkPostMessage);
 
         return $sparkPostMessage;
     }

@@ -39,14 +39,14 @@ class EmailUtils
         $content = preg_replace('/<style.*>([\s\S]*)<\/style>/i', '', $content);
         // Convert html entities to strip them later on
         $content = html_entity_decode($content);
-        // Convert new lines for relevant tags
-        $content = str_ireplace(['<br />', '<br/>', '<br>', '<table>', '</table>'], "\r\n", $content);
+        // Bold
+        $content = str_ireplace(['<strong>', '</strong>', '<b>', '</b>'], "*", $content);
         // Replace links to keep them accessible
-        $content = preg_replace('/<a[\s\S]*href="(.*?)"[\s\S]*>(.*)<\/a>/i', '$2 ($1)', $content);
+        $content = preg_replace('/<a[\s\S]href="(.*?)"[\s\S]*?>(.*?)<\/a>/i', '$2 ($1)', $content);
         // Remove html tags
         $content = strip_tags($content);
         // Avoid lots of spaces
-        $content = preg_replace('/^[\s]+(\S)/m', "$1", $content);
+        $content = preg_replace('/^[\s][\s]+(\S)/m', "\n$1", $content);
         // Trim content so that it's nice
         $content = trim($content);
         return $content;
