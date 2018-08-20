@@ -58,6 +58,26 @@ This module create a new admin section that allows you to:
 NOTE : Make sure that you have a valid api key (not a subaccount key) to access
 features related to installation of the webhook through the CMS.
 
+## Setting tags or metadata
+
+By using custom headers you can pass parameters to the api by following the
+same principle than the SMTP api.
+
+The main way to pass parameters is to add a json encoded string through the
+X-MSYS-API header, but you can also use that Mandrill compatiblity layer.
+
+For full details, look at the [documentation] (https://developers.sparkpost.com/api/smtp/)
+
+    ```php
+    $email = new Email();
+    $email->setSubject($sellerTitle . ' - Invoice - ' . $date);
+    $email->setBody($body);
+    // Through Mandrill compat layer
+    $email->getSwiftMessage()->getHeaders()->addTextHeader('X-MC-Metadata', json_encode(['RecordID' => $this->ID]));
+    // Or use M-SYS header
+    $email->getSwiftMessage()->getHeaders()->addTextHeader('X-MSYS-API', json_encode(['metadata' => ['RecordID' => $this->ID]]));
+    ```
+
 ## Webhooks
 
 From the SparkPost Admin, you can setup a webhook for your website. This webhook
