@@ -405,7 +405,6 @@ class SparkPostSwiftTransport implements Swift_Transport
 
         // If we ask to provide plain, use our custom method instead of the provided one
         if ($bodyHtml && SparkPostHelper::config()->provide_plain) {
-            d($bodyText, EmailUtils::convert_html_to_text($bodyHtml));
             $bodyText = EmailUtils::convert_html_to_text($bodyHtml);
         }
 
