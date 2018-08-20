@@ -298,6 +298,7 @@ class SparkPostSwiftTransport implements Swift_Transport
         $attachments = array();
         $headers = array();
         $tags = array();
+        $metadata = array();
         $inlineCss = null;
 
         // Mandrill compatibility
@@ -306,6 +307,11 @@ class SparkPostSwiftTransport implements Swift_Transport
             /** @var \Swift_Mime_Headers_UnstructuredHeader $tagsHeader */
             $tagsHeader = $message->getHeaders()->get('X-MC-Tags');
             $tags = explode(',', $tagsHeader->getValue());
+        }
+        if ($message->getHeaders()->has('X-MC-Metadata')) {
+            /** @var \Swift_Mime_Headers_UnstructuredHeader $tagsHeader */
+            $metadataHeader = $message->getHeaders()->get('X-MC-Metadata');
+            $metadata = json_decode($metadataHeader->getValue(), JSON_OBJECT_AS_ARRAY);
         }
         if ($message->getHeaders()->has('X-MC-InlineCSS')) {
             $inlineCss = $message->getHeaders()->get('X-MC-InlineCSS')->getValue();
@@ -318,17 +324,25 @@ class SparkPostSwiftTransport implements Swift_Transport
             if (!empty($msysHeader['tags'])) {
                 $tags = array_merge($tags, $msysHeader['tags']);
             }
+            if (!empty($msysHeader['metadata'])) {
+                $metadata = array_merge($metadata, $msysHeader['metadata']);
+            }
         }
 
         // Build recipients list
         // @link https://developers.sparkpost.com/api/recipient-lists.html
+        $primaryEmail = null;
         foreach ($toAddresses as $toEmail => $toName) {
+            if ($primaryEmail === null) {
+                $primaryEmail = $toEmail;
+            }
             $recipients[] = array(
                 'address' => array(
                     'email' => $toEmail,
                     'name' => $toName,
                 ),
                 'tags' => $tags,
+                'metadata' => $metadata,
             );
         }
 
@@ -341,10 +355,12 @@ class SparkPostSwiftTransport implements Swift_Transport
             }
         }
 
+        // @link https://www.sparkpost.com/docs/faq/cc-bcc-with-rest-api/
         foreach ($ccAddresses as $ccEmail => $ccName) {
             $cc[] = array(
                 'email' => $ccEmail,
                 'name' => $ccName,
+                'header_to' => $primaryEmail ? $primaryEmail : $ccEmail,
             );
         }
 
@@ -352,6 +368,7 @@ class SparkPostSwiftTransport implements Swift_Transport
             $bcc[] = array(
                 'email' => $bccEmail,
                 'name' => $bccName,
+                'header_to' => $primaryEmail ? $primaryEmail : $ccEmail,
             );
         }
 
@@ -392,6 +409,7 @@ class SparkPostSwiftTransport implements Swift_Transport
             $bodyHtml = EmailUtils::inline_styles($bodyHtml);
         }
 
+        // Custom unsubscribe list
         if ($message->getHeaders()->has('List-Unsubscribe')) {
             $headers['List-Unsubscribe'] = $message->getHeaders()->get('List-Unsubscribe')->getValue();
         }
@@ -421,13 +439,10 @@ class SparkPostSwiftTransport implements Swift_Transport
 
         // Add remaining elements
         if (!empty($cc)) {
-            $sparkPostMessage['cc'] = $cc;
-        }
-        if (!empty($bcc)) {
-            $sparkPostMessage['bcc'] = $bcc;
+            $sparkPostMessage['headers.CC'] = $cc;
         }
         if (!empty($headers)) {
-            $sparkPostMessage['headers'] = $headers;
+            $sparkPostMessage['customHeaders'] = $headers;
         }
         if (count($attachments) > 0) {
             $sparkPostMessage['attachments'] = $attachments;
