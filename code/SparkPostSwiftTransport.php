@@ -457,8 +457,6 @@ class SparkPostSwiftTransport implements Swift_Transport
             $sparkPostMessage['attachments'] = $attachments;
         }
 
-        d($sparkPostMessage);
-
         return $sparkPostMessage;
     }
 
