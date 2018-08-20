@@ -115,8 +115,8 @@ class SparkPostSwiftTransport implements Swift_Transport
         if ($disableSending) {
             $result = [
                 'total_rejected_recipients' => 0,
-                'total_accepted_recipients' => 0,
-                'id' => microtime(),
+                'total_accepted_recipients' => 1,
+                'id' => uniqid(),
                 'disabled' => true,
             ];
         } else {
@@ -130,7 +130,7 @@ class SparkPostSwiftTransport implements Swift_Transport
 
         $sendCount = $this->resultApi['total_accepted_recipients'];
 
-        // TODO: might not be the best way to return fromEmail
+        // We don't know which recipients failed, so simply add fromEmail since it's the only one we know
         if ($this->resultApi['total_rejected_recipients'] > 0) {
             $failedRecipients[] = $this->fromEmail;
         }
