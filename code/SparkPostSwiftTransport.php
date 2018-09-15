@@ -341,14 +341,23 @@ class SparkPostSwiftTransport implements Swift_Transport
             if ($primaryEmail === null) {
                 $primaryEmail = $toEmail;
             }
-            $recipients[] = array(
+            if (!$toName) {
+                $toName = $toEmail;
+            }
+            $recipient = array(
                 'address' => array(
                     'email' => $toEmail,
                     'name' => $toName,
-                ),
-                'tags' => $tags,
-                'metadata' => $metadata,
+                )
             );
+            if (!empty($tags)) {
+                $recipient['tags'] = $tags;
+            }
+              // TODO: metadata are not valid?
+            if (!empty($metadata)) {
+                $recipient['metadata'] = $metadata;
+            }
+            $recipients[] = $recipient;
         }
 
         $reply_to = null;
