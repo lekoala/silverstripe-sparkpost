@@ -5,10 +5,11 @@ use Psr\Log\LoggerInterface;
 use SilverStripe\Control\Director;
 use SilverStripe\Core\Environment;
 use SilverStripe\Control\Controller;
-use SilverStripe\Security\Permission;
 use SilverStripe\Control\HTTPRequest;
+use SilverStripe\Security\Permission;
 use SilverStripe\Control\Email\Mailer;
 use SilverStripe\Core\Injector\Injector;
+use LeKoala\SparkPost\Api\SparkPostApiClient;
 
 /**
  * Provide extensions points for handling the webhook
