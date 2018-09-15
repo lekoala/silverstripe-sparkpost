@@ -1,6 +1,7 @@
 <?php
 namespace LeKoala\SparkPost;
 
+use Exception;
 use Psr\Log\LoggerInterface;
 use SilverStripe\Control\Director;
 use SilverStripe\Core\Environment;
@@ -216,8 +217,9 @@ class SparkPostController extends Controller
             return $response;
         }
 
-        if (defined('SPARKPOST_WEBHOOK_LOG_DIR')) {
-            $dir = rtrim(Director::baseFolder(), '/') . '/' . rtrim(SPARKPOST_WEBHOOK_LOG_DIR, '/');
+        $webhookLogDir = Environment::getEnv('SPARKPOST_WEBHOOK_LOG_DIR');
+        if ($webhookLogDir) {
+            $dir = rtrim(Director::baseFolder(), '/') . '/' . rtrim($webhookLogDir, '/');
 
             if (!is_dir($dir) && Director::isDev()) {
                 mkdir($dir, 0755, true);
