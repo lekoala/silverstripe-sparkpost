@@ -139,7 +139,7 @@ class SparkPostApiClient
     {
         if (!isset($this->curlOpts[$name])) {
             throw new InvalidArgumentException("$name is not a valid option. Valid options are : " .
-            implode(', ', array_keys($this->curlOpts)));
+                implode(', ', array_keys($this->curlOpts)));
         }
         return $this->curlOpts[$name];
     }
@@ -479,8 +479,10 @@ class SparkPostApiClient
     {
         if ($events === null) {
             // Default to the most used events
-            $events = ['delivery', 'injection', 'open', 'click', 'bounce', 'spam_complaint',
-                'list_unsubscribe', 'link_unsubscribe'];
+            $events = [
+                'delivery', 'injection', 'open', 'click', 'bounce', 'spam_complaint',
+                'list_unsubscribe', 'link_unsubscribe'
+            ];
         }
         $params = [
             'name' => $name,
@@ -642,8 +644,8 @@ class SparkPostApiClient
     public function verifySendingDomain($id)
     {
         return $this->makeRequest('sending-domains/' . $id . '/verify', self::METHOD_POST, [
-                'dkim_verify' => true,
-                'spf_verify' => true
+            'dkim_verify' => true,
+            'spf_verify' => true
         ]);
     }
 
@@ -911,8 +913,8 @@ class SparkPostApiClient
         } else {
             curl_setopt($ch, CURLOPT_URL, self::API_ENDPOINT . '/' . $endpoint);
         }
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, (int) $this->getCurlOption('connect_timeout'));
-        curl_setopt($ch, CURLOPT_TIMEOUT, (int) $this->getCurlOption('timeout'));
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, (int)$this->getCurlOption('connect_timeout'));
+        curl_setopt($ch, CURLOPT_TIMEOUT, (int)$this->getCurlOption('timeout'));
 
         // Collect verbose data in a stream
         if ($this->getCurlOption('verbose')) {
@@ -977,7 +979,7 @@ class SparkPostApiClient
                         if (isset($data['content']['from'])) {
                             $from = $data['content']['from'];
                         }
-                        if ($from) {
+                        if ($from && is_string($from)) {
                             $domain = substr(strrchr($from, "@"), 1);
                             $message .= ' (' . $domain . ')';
                         }
