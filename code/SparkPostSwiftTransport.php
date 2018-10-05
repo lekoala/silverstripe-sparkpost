@@ -283,8 +283,9 @@ class SparkPostSwiftTransport implements Swift_Transport
         $contentType = $this->getMessagePrimaryContentType($message);
 
         $fromAddresses = $message->getFrom();
-        $fromEmails = array_keys($fromAddresses);
-        list($fromFirstEmail, $fromFirstName) = each($fromAddresses);
+        $fromEmails = array_keys($fromAddresses);        
+        $fromFirstEmail = key($fromAddresses);
+        $fromFirstName = current($fromAddresses);        
         $this->fromEmail = $fromFirstEmail;
 
         $toAddresses = $message->getTo();
