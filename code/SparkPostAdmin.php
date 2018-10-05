@@ -866,6 +866,10 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     {
         $email = SparkPostHelper::resolveDefaultFromEmail(null, false);
         if ($email) {
+            if (is_array($email)) {
+                $email = key($email);
+            }
+            
             $domain = substr(strrchr($email, "@"), 1);
             return $domain;
         }
