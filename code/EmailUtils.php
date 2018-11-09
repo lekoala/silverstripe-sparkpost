@@ -1,7 +1,6 @@
 <?php
 namespace LeKoala\SparkPost;
 
-use \Exception;
 use Pelago\Emogrifier;
 
 class EmailUtils

@@ -9,7 +9,6 @@ use \Swift_Mime_Message;
 use \Swift_Events_SendEvent;
 use Psr\Log\LoggerInterface;
 use \Swift_Events_EventListener;
-use \Swift_Events_EventDispatcher;
 use SilverStripe\Control\Director;
 use SilverStripe\Assets\FileNameFilter;
 use SilverStripe\Core\Injector\Injector;
@@ -283,9 +282,9 @@ class SparkPostSwiftTransport implements Swift_Transport
         $contentType = $this->getMessagePrimaryContentType($message);
 
         $fromAddresses = $message->getFrom();
-        $fromEmails = array_keys($fromAddresses);        
+        $fromEmails = array_keys($fromAddresses);
         $fromFirstEmail = key($fromAddresses);
-        $fromFirstName = current($fromAddresses);        
+        $fromFirstName = current($fromAddresses);
         $this->fromEmail = $fromFirstEmail;
 
         $toAddresses = $message->getTo();

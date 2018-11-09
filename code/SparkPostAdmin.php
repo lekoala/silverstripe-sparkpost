@@ -23,7 +23,6 @@ use SilverStripe\Forms\LiteralField;
 use SilverStripe\Security\Permission;
 use SilverStripe\Forms\DropdownField;
 use SilverStripe\Control\Email\Email;
-use SilverStripe\Control\Email\Mailer;
 use LeKoala\SparkPost\SparkPostHelper;
 use SilverStripe\Forms\CompositeField;
 use SilverStripe\SiteConfig\SiteConfig;
@@ -869,7 +868,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             if (is_array($email)) {
                 $email = key($email);
             }
-            
+
             $domain = substr(strrchr($email, "@"), 1);
             return $domain;
         }
