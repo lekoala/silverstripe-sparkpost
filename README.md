@@ -125,8 +125,14 @@ to this subaccount.
 
 ## Preventing spam
 
-- Make sure you have properly configured your SPF and DKIM records for your domain.
+- Make sure you have properly configured your [SPF](https://tools.sparkpost.com/spf/builder) and DKIM records for your domain.
+
+    mydomain.com   TXT   "v=spf1 include:myauthorizeddomain.com include:sparkpostmail.com ~all”
+
 - Create a [DMARC record](https://www.unlocktheinbox.com/dmarcwizard/)
+
+    _dmarc.mydomain.com. 3600 IN TXT "v=DMARC1; p=none; sp=none; rf=afrf; pct=100; ri=86400"
+
 - Leave provide_plain option to true or provide plain content for your emails
 - Use [Mail Tester](http://www.mail-tester.com/) to troubleshoot your issues
 
