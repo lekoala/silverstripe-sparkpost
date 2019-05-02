@@ -18,7 +18,6 @@ use LeKoala\SparkPost\Api\SparkPostApiClient;
  */
 class SparkPostController extends Controller
 {
-
     protected $eventsCount = 0;
     protected $skipCount = 0;
     private static $allowed_actions = [
@@ -41,6 +40,13 @@ class SparkPostController extends Controller
      */
     public $logger;
 
+    public function index(HTTPRequest $req)
+    {
+        return $this->render([
+            'Title' => 'SparkPost',
+            'Content' => 'Please use a dedicated action'
+        ]);
+    }
 
     /**
      * You can also see /resources/sample.json
@@ -90,7 +96,7 @@ class SparkPostController extends Controller
 
         $client = SparkPostHelper::getMasterClient();
 
-        $inbound_domain = Environment::get('SPARKPOST_INBOUND_DOMAIN');
+        $inbound_domain = Environment::getEnv('SPARKPOST_INBOUND_DOMAIN');
         if (!$inbound_domain) {
             die('You must define a key SPARKPOST_INBOUND_DOMAIN');
         }
@@ -127,13 +133,14 @@ class SparkPostController extends Controller
         }
 
         echo '<pre>' . __FILE__ . ':' . __LINE__ . '<br/>';
+        echo 'List Inbounds Domains:<br/>';
         print_r($listInboundDomains);
         echo '</pre>';
 
         $found = false;
 
         foreach ($listInboundDomains as $id) {
-            if ($id['domain'] == SPARKPOST_INBOUND_DOMAIN) {
+            if ($id['domain'] == $inbound_domain) {
                 $found = true;
             }
         }
@@ -142,9 +149,10 @@ class SparkPostController extends Controller
             echo "Domain is not found, we create it<br/>";
 
             // This is the domain that users will send email to.
-            $result = $client->createInboundDomain(SPARKPOST_INBOUND_DOMAIN);
+            $result = $client->createInboundDomain($inbound_domain);
 
             echo '<pre>' . __FILE__ . ':' . __LINE__ . '<br/>';
+            echo 'Create Inbound Domain:<br/>';
             print_r($result);
             echo '</pre>';
         } else {
@@ -155,13 +163,14 @@ class SparkPostController extends Controller
         // https://api.sparkpost.com/api/v1/relay-webhooks. This step links your consumer with the Inbound Domain.
 
         echo '<pre>' . __FILE__ . ':' . __LINE__ . '<br/>';
+        echo 'List Webhooks:<br/>';
         print_r($listWebhooks);
         echo '</pre>';
 
         $found = false;
 
         foreach ($listWebhooks as $wh) {
-            if ($wh['match']['domain'] == SPARKPOST_INBOUND_DOMAIN) {
+            if ($wh['match']['domain'] == $inbound_domain) {
                 $found = true;
             }
         }
@@ -172,11 +181,12 @@ class SparkPostController extends Controller
                 'name' => 'Inbound Webhook',
                 'target' => Director::absoluteURL('sparkpost/incoming'),
                 'match' => [
-                    'domain' => SPARKPOST_INBOUND_DOMAIN
+                    'domain' => $inbound_domain
                 ]
             ]);
 
             echo '<pre>' . __FILE__ . ':' . __LINE__ . '<br/>';
+            echo 'Webhook result:<br/>';
             print_r($webhookResult);
             echo '</pre>';
 
@@ -278,23 +288,23 @@ class SparkPostController extends Controller
             $this->extend('onAnyEvent', $data, $type);
 
             switch ($type) {
-                //Click, Open
+                    //Click, Open
                 case SparkPostApiClient::TYPE_ENGAGEMENT:
                     $this->extend('onEngagementEvent', $data, $type);
                     break;
-                //Generation Failure, Generation Rejection
+                    //Generation Failure, Generation Rejection
                 case SparkPostApiClient::TYPE_GENERATION:
                     $this->extend('onGenerationEvent', $data, $type);
                     break;
-                //Bounce, Delivery, Injection, SMS Status, Spam Complaint, Out of Band, Policy Rejection, Delay
+                    //Bounce, Delivery, Injection, SMS Status, Spam Complaint, Out of Band, Policy Rejection, Delay
                 case SparkPostApiClient::TYPE_MESSAGE:
                     $this->extend('onMessageEvent', $data, $type);
                     break;
-                //Relay Injection, Relay Rejection, Relay Delivery, Relay Temporary Failure, Relay Permanent Failure
+                    //Relay Injection, Relay Rejection, Relay Delivery, Relay Temporary Failure, Relay Permanent Failure
                 case SparkPostApiClient::TYPE_RELAY:
                     $this->extend('onRelayEvent', $data, $type);
                     break;
-                //List Unsubscribe, Link Unsubscribe
+                    //List Unsubscribe, Link Unsubscribe
                 case SparkPostApiClient::TYPE_UNSUBSCRIBE:
                     $this->extend('onUnsubscribeEvent', $data, $type);
                     break;

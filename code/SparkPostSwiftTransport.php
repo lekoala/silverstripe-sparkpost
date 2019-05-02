@@ -353,7 +353,7 @@ class SparkPostSwiftTransport implements Swift_Transport
             if (!empty($tags)) {
                 $recipient['tags'] = $tags;
             }
-              // TODO: metadata are not valid?
+            // TODO: metadata are not valid?
             if (!empty($metadata)) {
                 $recipient['metadata'] = $metadata;
             }

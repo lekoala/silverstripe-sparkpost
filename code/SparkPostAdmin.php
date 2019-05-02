@@ -8,34 +8,35 @@ use SilverStripe\Forms\TabSet;
 use SilverStripe\ORM\ArrayLib;
 use SilverStripe\ORM\ArrayList;
 use SilverStripe\View\ArrayData;
-use SilverStripe\Forms\FieldList;
-use SilverStripe\Forms\TextField;
-use SilverStripe\Forms\DateField;
 use SilverStripe\Control\Session;
+use SilverStripe\Forms\DateField;
+use SilverStripe\Forms\FieldList;
+use SilverStripe\Forms\FormField;
+use SilverStripe\Forms\TextField;
 use SilverStripe\Control\Director;
-use SilverStripe\Forms\FormAction;
 use SilverStripe\Core\Environment;
-use SilverStripe\Forms\HiddenField;
-use SilverStripe\View\ViewableData;
-use SilverStripe\Security\Security;
+use SilverStripe\Forms\FormAction;
 use SilverStripe\Admin\LeftAndMain;
+use SilverStripe\Forms\HiddenField;
+use SilverStripe\Security\Security;
+use SilverStripe\View\ViewableData;
 use SilverStripe\Forms\LiteralField;
-use SilverStripe\Security\Permission;
-use SilverStripe\Forms\DropdownField;
 use SilverStripe\Control\Email\Email;
+use SilverStripe\Forms\DropdownField;
+use SilverStripe\Security\Permission;
 use LeKoala\SparkPost\SparkPostHelper;
 use SilverStripe\Forms\CompositeField;
 use SilverStripe\SiteConfig\SiteConfig;
 use SilverStripe\Core\Injector\Injector;
-use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Control\Email\SwiftMailer;
+use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Security\PermissionProvider;
 use LeKoala\SparkPost\SparkPostSwiftTransport;
 use SilverStripe\Forms\GridField\GridFieldConfig;
 use SilverStripe\Forms\GridField\GridFieldFooter;
 use SilverStripe\Forms\GridField\GridFieldDetailForm;
-use Symbiote\GridFieldExtensions\GridFieldTitleHeader;
 use SilverStripe\Forms\GridField\GridFieldDataColumns;
+use Symbiote\GridFieldExtensions\GridFieldTitleHeader;
 use SilverStripe\Forms\GridField\GridFieldToolbarHeader;
 use SilverStripe\Forms\GridField\GridFieldSortableHeader;
 
@@ -208,9 +209,9 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             new HiddenField('ID', false, 0)
         );
 
-        $fields = new FieldList(
+        $fields = new FieldList([
             $root = new TabSet('Root', $messagesTab)
-        );
+        ]);
 
         if ($this->CanConfigureApi()) {
             $settingsTab = new Tab('Settings', _t('SparkPostAdmin.Settings', 'Settings'));
@@ -418,7 +419,9 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
 
     public function SearchForm()
     {
-        $SearchForm = new Form($this, 'SearchForm', new FieldList(), new FieldList(new FormAction('doSearch')));
+        $SearchForm = new Form($this, 'SearchForm', new FieldList(), new FieldList([
+            new FormAction('doSearch')
+        ]));
         $SearchForm->setAttribute('style', 'display:none');
         return $SearchForm;
     }
@@ -865,10 +868,6 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     {
         $email = SparkPostHelper::resolveDefaultFromEmail(null, false);
         if ($email) {
-            if (is_array($email)) {
-                $email = key($email);
-            }
-
             $domain = substr(strrchr($email, "@"), 1);
             return $domain;
         }

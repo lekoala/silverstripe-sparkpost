@@ -39,8 +39,7 @@ class SparkPostHelper
 
     /**
      * Get the api client instance
-     * @return LeKoala\SparkPost\Api\SparkPostApiClient
-     *
+     * @return SparkPostApiClient
      * @throws Exception
      */
     public static function getClient()
