@@ -275,7 +275,16 @@ class SparkPostController extends Controller
         foreach ($payload as $r) {
             $ev = $r['msys'];
 
+            // This is a test payload
+            if (empty($ev)) {
+                continue;
+            }
+
             $type = key($ev);
+            if (!isset($ev[$type])) {
+                $this->getLogger()->warn("Invalid type $type in SparkPost payload");
+                continue;
+            }
             $data = $ev[$type];
 
             // Ignore events not related to the subaccount we are managing
