@@ -11,9 +11,6 @@ if (defined('SPARKPOST_MASTER_API_KEY') && SPARKPOST_MASTER_API_KEY !== '') {
         SparkPostMailer::config()->api_key = SPARKPOST_MASTER_API_KEY;
     }
 }
-if (defined('SPARKPOST_API_KEY') && SPARKPOST_API_KEY !== '') {
-    SparkPostMailer::config()->api_key = SPARKPOST_API_KEY;
-}
 if (defined('SPARKPOST_SENDING_DISABLED')) {
     SparkPostMailer::config()->disable_sending = SPARKPOST_SENDING_DISABLED;
 }
