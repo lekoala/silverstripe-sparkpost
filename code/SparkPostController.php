@@ -64,10 +64,10 @@ class SparkPostController extends Controller
         $file = $this->getRequest()->getVar('file');
         if ($file) {
             $data = file_get_contents(Director::baseFolder() . '/' . rtrim($file, '/'));
-            $payload = json_decode($data, JSON_OBJECT_AS_ARRAY);
         } else {
-            $payload = $client->getSampleEvents();
+            $data = file_get_contents(dirname(__DIR__) . '/resources/sample.json');
         }
+        $payload = json_decode($data, JSON_OBJECT_AS_ARRAY);
 
         $this->processPayload($payload, 'TEST');
 
