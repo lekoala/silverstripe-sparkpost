@@ -61,7 +61,7 @@ class EmailUtils
      */
     public static function get_displayname_from_rfc_email($rfc_email_string)
     {
-        $name = preg_match('/[\w\s-\.]+/u', $rfc_email_string, $matches);
+        $name = preg_match('/[\w\s\-\.]+/u', $rfc_email_string, $matches);
         $matches[0] = trim($matches[0]);
         return $matches[0];
     }

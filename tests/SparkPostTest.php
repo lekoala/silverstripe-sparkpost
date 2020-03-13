@@ -1,7 +1,7 @@
 <?php
+
 namespace LeKoala\SparkPost\Test;
 
-use SilverStripe\Dev\TestMailer;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Core\Environment;
 use SilverStripe\Control\Email\Email;

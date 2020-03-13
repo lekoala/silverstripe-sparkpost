@@ -1,14 +1,10 @@
 <?php
+
 namespace LeKoala\SparkPost\Test;
 
-use SilverStripe\Dev\TestMailer;
 use SilverStripe\Dev\SapphireTest;
-use SilverStripe\Core\Environment;
 use SilverStripe\Control\Email\Email;
-use LeKoala\SparkPost\SparkPostHelper;
-use SilverStripe\Control\Email\Mailer;
 use SilverStripe\Core\Injector\Injector;
-use SilverStripe\Control\Email\SwiftMailer;
 use LeKoala\SparkPost\EmailUtils;
 
 /**
