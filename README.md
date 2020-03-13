@@ -170,7 +170,7 @@ LeKoala\SparkPost\SparkPostHelper:
 ```
 
 ## Compatibility
-Tested with 4.0, 4.1 and 4.2
+Tested with 4.x
 
 For 3.x compatibility, use branch 1
 
