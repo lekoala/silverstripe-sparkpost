@@ -1,5 +1,23 @@
 # SilverStripe SparkPost module
 
+[![Build Status](https://travis-ci.org/lekoala/silverstripe-sparkpost.svg?branch=master)](https://travis-ci.org/lekoala/silverstripe-sparkpost)
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/lekoala/silverstripe-sparkpost/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/lekoala/silverstripe-sparkpost/?branch=master)
+[![Code Coverage](https://scrutinizer-ci.com/g/lekoala/silverstripe-sparkpost/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/lekoala/silverstripe-sparkpost/?branch=master)
+[![Build Status](https://scrutinizer-ci.com/g/lekoala/silverstripe-sparkpost/badges/build.png?b=master)](https://scrutinizer-ci.com/g/lekoala/silverstripe-sparkpost/build-status/master)
+[![codecov.io](https://codecov.io/github/lekoala/silverstripe-sparkpost/coverage.svg?branch=master)](https://codecov.io/github/lekoala/silverstripe-sparkpost?branch=master)
+
+[![Latest Stable Version](https://poser.pugx.org/lekoala/silverstripe-sparkpost/version)](https://packagist.org/packages/lekoala/silverstripe-sparkpost)
+[![Latest Unstable Version](https://poser.pugx.org/lekoala/silverstripe-sparkpost/v/unstable)](//packagist.org/packages/lekoala/silverstripe-sparkpost)
+[![Total Downloads](https://poser.pugx.org/lekoala/silverstripe-sparkpost/downloads)](https://packagist.org/packages/lekoala/silverstripe-sparkpost)
+[![License](https://poser.pugx.org/lekoala/silverstripe-sparkpost/license)](https://packagist.org/packages/lekoala/silverstripe-sparkpost)
+[![Monthly Downloads](https://poser.pugx.org/lekoala/silverstripe-sparkpost/d/monthly)](https://packagist.org/packages/lekoala/silverstripe-sparkpost)
+[![Daily Downloads](https://poser.pugx.org/lekoala/silverstripe-sparkpost/d/daily)](https://packagist.org/packages/lekoala/silverstripe-sparkpost)
+
+[![Dependency Status](https://www.versioneye.com/php/lekoala:silverstripe-sparkpost/badge.svg)](https://www.versioneye.com/php/lekoala:silverstripe-sparkpost)
+[![Reference Status](https://www.versioneye.com/php/lekoala:silverstripe-sparkpost/reference_badge.svg?style=flat)](https://www.versioneye.com/php/lekoala:silverstripe-sparkpost/references)
+
+![codecov.io](https://codecov.io/github/lekoala/silverstripe-sparkpost/branch.svg?branch=master)
+
 ## Setup
 
 Define in your .env file the following variable
