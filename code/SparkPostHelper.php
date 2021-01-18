@@ -1,4 +1,5 @@
 <?php
+
 namespace LeKoala\SparkPost;
 
 use \Exception;
@@ -100,13 +101,13 @@ class SparkPostHelper
     public static function init()
     {
         // Regular api key used for sending emails (including subaccount support)
-        $api_key = Environment::getEnv('SPARKPOST_API_KEY');
+        $api_key = self::getEnvApiKey();
         if ($api_key) {
             self::config()->api_key = $api_key;
         }
 
         // Master api key that is used to configure the account. If no api key is defined, the master api key is used
-        $master_api_key = Environment::getEnv('SPARKPOST_MASTER_API_KEY');
+        $master_api_key = self::getEnvMasterApiKey();
         if ($master_api_key) {
             self::config()->master_api_key = $master_api_key;
             if (!self::config()->api_key) {
@@ -114,15 +115,15 @@ class SparkPostHelper
             }
         }
 
-        $sending_disabled = Environment::getEnv('SPARKPOST_SENDING_DISABLED');
+        $sending_disabled = self::getEnvSendingDisabled();
         if ($sending_disabled) {
             self::config()->disable_sending = $sending_disabled;
         }
-        $enable_logging = Environment::getEnv('SPARKPOST_ENABLE_LOGGING');
+        $enable_logging = self::getEnvEnableLogging();
         if ($enable_logging) {
             self::config()->enable_logging = $enable_logging;
         }
-        $subaccount_id = Environment::getEnv('SPARKPOST_SUBACCOUNT_ID');
+        $subaccount_id = self::getEnvSubaccountId();
         if ($subaccount_id) {
             self::config()->subaccount_id = $subaccount_id;
         }
@@ -131,6 +132,31 @@ class SparkPostHelper
         if (self::config()->api_key) {
             self::registerTransport();
         }
+    }
+
+    public static function getEnvApiKey()
+    {
+        return Environment::getEnv('SPARKPOST_API_KEY');
+    }
+
+    public static function getEnvMasterApiKey()
+    {
+        return Environment::getEnv('SPARKPOST_MASTER_API_KEY');
+    }
+
+    public static function getEnvSendingDisabled()
+    {
+        return Environment::getEnv('SPARKPOST_SENDING_DISABLED');
+    }
+
+    public static function getEnvEnableLogging()
+    {
+        return  Environment::getEnv('SPARKPOST_ENABLE_LOGGING');
+    }
+
+    public static function getEnvSubaccountId()
+    {
+        return  Environment::getEnv('SPARKPOST_SUBACCOUNT_ID');
     }
 
     /**
