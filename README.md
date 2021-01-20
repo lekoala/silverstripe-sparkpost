@@ -13,11 +13,6 @@
 [![Monthly Downloads](https://poser.pugx.org/lekoala/silverstripe-sparkpost/d/monthly)](https://packagist.org/packages/lekoala/silverstripe-sparkpost)
 [![Daily Downloads](https://poser.pugx.org/lekoala/silverstripe-sparkpost/d/daily)](https://packagist.org/packages/lekoala/silverstripe-sparkpost)
 
-[![Dependency Status](https://www.versioneye.com/php/lekoala:silverstripe-sparkpost/badge.svg)](https://www.versioneye.com/php/lekoala:silverstripe-sparkpost)
-[![Reference Status](https://www.versioneye.com/php/lekoala:silverstripe-sparkpost/reference_badge.svg?style=flat)](https://www.versioneye.com/php/lekoala:silverstripe-sparkpost/references)
-
-![codecov.io](https://codecov.io/github/lekoala/silverstripe-sparkpost/branch.svg?branch=master)
-
 ## Setup
 
 Define in your .env file the following variable
