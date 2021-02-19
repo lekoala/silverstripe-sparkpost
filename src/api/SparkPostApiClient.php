@@ -5,6 +5,7 @@ namespace LeKoala\SparkPost\Api;
 use Exception;
 use InvalidArgumentException;
 use DateTime;
+use LeKoala\SparkPost\EmailUtils;
 
 /**
  * A really simple SparkPost api client
@@ -931,8 +932,8 @@ class SparkPostApiClient
      */
     public function buildAddressFromString($string, $header_to = null)
     {
-        $email = self::get_email_from_rfc_email($string);
-        $name = self::get_displayname_from_rfc_email($string);
+        $email = EmailUtils::get_email_from_rfc_email($string);
+        $name = EmailUtils::get_displayname_from_rfc_email($string);
         return $this->buildAddress($email, $name, $header_to);
     }
 
@@ -1156,38 +1157,5 @@ class SparkPostApiClient
 
         $error = json_last_error();
         return isset($ERRORS[$error]) ? $ERRORS[$error] : 'Unknown error';
-    }
-
-    /**
-     * Match all words and whitespace, will be terminated by '<'
-     *
-     * Note: use /u to support utf8 strings
-     *
-     * @param string $rfc_email_string
-     * @return string
-     */
-    protected static function get_displayname_from_rfc_email($rfc_email_string)
-    {
-        $name = preg_match('/[\w\s]+/u', $rfc_email_string, $matches);
-        $matches[0] = trim($matches[0]);
-        return $matches[0];
-    }
-
-    /**
-     * Extract parts between brackets
-     *
-     * @param string $rfc_email_string
-     * @return string
-     */
-    protected static function get_email_from_rfc_email($rfc_email_string)
-    {
-        if (strpos($rfc_email_string, '<') === false) {
-            return $rfc_email_string;
-        }
-        $mailAddress = preg_match('/(?:<)(.+)(?:>)$/', $rfc_email_string, $matches);
-        if (empty($matches)) {
-            return $rfc_email_string;
-        }
-        return $matches[1];
     }
 }
