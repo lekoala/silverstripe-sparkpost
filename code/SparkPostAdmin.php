@@ -323,8 +323,6 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         } else {
             try {
                 $client = SparkPostHelper::getClient();
-
-                d($client, $method, $params);
                 $data = $client->$method($params);
             } catch (Exception $ex) {
                 $this->lastException = $ex;
