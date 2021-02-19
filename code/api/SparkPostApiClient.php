@@ -447,6 +447,7 @@ class SparkPostApiClient
      * [type] => delivery
      * [timestamp] =>  2050-01-01T11:57:36.000Z
      *
+     * @deprecated
      * @param array $params
      * @return array
      */
@@ -460,6 +461,77 @@ class SparkPostApiClient
         $params = array_merge($defaultParams, $params);
 
         return $this->makeRequest('message-events', self::METHOD_GET, $params);
+    }
+
+    /**
+     * Search for Message Events
+     *
+     * Parameters
+     * - from string, default is 24 hours ago
+     * - per_page number, default is 1000
+     * - event_ids string
+     * - events string, default is all event types
+     * - recipients string
+     * - recipient_domains string
+     * - from_addresses string
+     * - sending_domains string
+     * - subjects string
+     * - bounce_classes number
+     * - reasons string
+     * - campaigns string
+     * - templates string
+     * - sending_ips string
+     * - ip_pools string
+     * - subaccounts string
+     * - messages string
+     * - transmissions string
+     * - mailbox_providers string
+     * - mailbox_provider_regions string
+     * - ab_tests string
+     * - ab_test_versions number
+     *
+     * Result is an array of objects that looks like this
+     *
+     * "mailbox_provider" => "SomeProvider"
+     * "template_version" => "0"
+     * "friendly_from" => "noreply@testing.example.com"
+     * "subject" => "My email"
+     * "ip_pool" => "default"
+     * "sending_domain" => "testing.example.com"
+     * "rcpt_tags" => []
+     * "type" => "initial_open"
+     * "mailbox_provider_region" => "Global"
+     * "raw_rcpt_to" => "recipient@dest.com"
+     * "msg_from" => "msprvs1=46848646040zazea=bounces-99999-1@bounce.example.com"
+     * "geo_ip" => array:8 [▶]
+     * "rcpt_to" => "recipient@dest.com"
+     * "subaccount_id" => 1
+     * "transmission_id" => "1230984717797820762"
+     * "user_agent" => "Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)"
+     * "timestamp" => "2055-02-19T14:44:29.000Z"
+     * "click_tracking" => true
+     * "rcpt_meta" => []
+     * "message_id" => "122da1ce2f606b5c07dc"
+     * "ip_address" => "12.123.11.11"
+     * "initial_pixel" => true
+     * "recipient_domain" => "dest.com"
+     * "event_id" => "5454130313444582480096"
+     * "routing_domain" => "dest.com"
+     * "sending_ip" => "99.99.99.99"
+     * "template_id" => "template_693098471779782565"
+     * "delv_method" => "esmtp"
+     * "customer_id" => 99999
+     * "open_tracking" => true
+     * "injection_time" => "2055-02-19T14:43:45.000Z"
+     * "transactional" => "1"
+     * "msg_size" => "48613"
+     *
+     * @param array $params
+     * @return array
+     */
+    public function searchEvents($params = [])
+    {
+        return $this->makeRequest('events/message', self::METHOD_GET, $params);
     }
 
     /**
