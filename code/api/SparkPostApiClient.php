@@ -119,7 +119,7 @@ class SparkPostApiClient
         if (getenv('SPARKPOST_EU')) {
             $this->euEndpoint = getenv('SPARKPOST_EU');
         } elseif (defined('SPARKPOST_EU')) {
-            $this->euEndpoint = SPARKPOST_EU;
+            $this->euEndpoint = true;
         }
         $this->subaccount = $subaccount;
         $this->curlOpts = array_merge($this->getDefaultCurlOptions(), $curlOpts);

@@ -74,7 +74,7 @@ features related to installation of the webhook through the CMS.
 Note that by default the messages are cached (or not) according to config. You
 can disable this with the following env key
 
-    SPARKPOST_ADMIN_CACHE=false
+    SPARKPOST_DISABLE_CACHE=true
 
 ## Setting tags or metadata
 

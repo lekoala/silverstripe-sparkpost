@@ -55,7 +55,7 @@ class SparkPostHelper
                 self::$client->setCurlOption(CURLOPT_VERBOSE, true);
             }
             if (Environment::getEnv("SPARKPOST_EU")) {
-                self::$client->setEuEndpoint(Environment::getEnv("SPARKPOST_EU"));
+                self::$client->setEuEndpoint(true);
             }
             $subaccountId = self::config()->subaccount_id;
             if ($subaccountId) {
