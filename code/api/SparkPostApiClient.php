@@ -2,11 +2,9 @@
 
 namespace LeKoala\SparkPost\Api;
 
-use \Exception;
-use \InvalidArgumentException;
-use \DateTime;
-
-use SilverStripe\Core\Environment;
+use Exception;
+use InvalidArgumentException;
+use DateTime;
 
 /**
  * A really simple SparkPost api client
@@ -60,6 +58,13 @@ class SparkPostApiClient
     protected $key;
 
     /**
+     * Is eu endpoint ?
+     *
+     * @var boolean
+     */
+    protected $euEndpoint = false;
+
+    /**
      * Curl verbose log
      *
      * @var string
@@ -110,6 +115,11 @@ class SparkPostApiClient
             if (!$this->key && defined('SPARKPOST_API_KEY')) {
                 $this->key = SPARKPOST_API_KEY;
             }
+        }
+        if (getenv('SPARKPOST_EU')) {
+            $this->euEndpoint = getenv('SPARKPOST_EU');
+        } elseif (defined('SPARKPOST_EU')) {
+            $this->euEndpoint = SPARKPOST_EU;
         }
         $this->subaccount = $subaccount;
         $this->curlOpts = array_merge($this->getDefaultCurlOptions(), $curlOpts);
@@ -173,6 +183,26 @@ class SparkPostApiClient
     public function setKey($key)
     {
         $this->key = $key;
+    }
+
+    /**
+     * Get the use of eu endpoint
+     *
+     * @return string
+     */
+    public function getEuEndpoint()
+    {
+        return $this->euEndpoint;
+    }
+
+    /**
+     * Set the use of eu endpoint
+     *
+     * @param string $euEndpoint
+     */
+    public function setEuEndpoint($euEndpoint)
+    {
+        $this->euEndpoint = $euEndpoint;
     }
 
     /**
@@ -908,7 +938,7 @@ class SparkPostApiClient
         curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
         curl_setopt($ch, CURLOPT_USERAGENT, 'SparkPostApiClient v' . self::CLIENT_VERSION);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        if (Environment::getEnv('SPARKPOST_EU')) {
+        if ($this->euEndpoint) {
             curl_setopt($ch, CURLOPT_URL, self::API_ENDPOINT_EU . '/' . $endpoint);
         } else {
             curl_setopt($ch, CURLOPT_URL, self::API_ENDPOINT . '/' . $endpoint);

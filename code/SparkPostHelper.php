@@ -2,7 +2,7 @@
 
 namespace LeKoala\SparkPost;
 
-use \Exception;
+use Exception;
 use SilverStripe\Core\Environment;
 use SilverStripe\Control\Director;
 use SilverStripe\Control\Email\Email;
@@ -53,6 +53,9 @@ class SparkPostHelper
             self::$client = new SparkPostApiClient($key);
             if (Director::isDev()) {
                 self::$client->setCurlOption(CURLOPT_VERBOSE, true);
+            }
+            if (Environment::getEnv("SPARKPOST_EU")) {
+                self::$client->setEuEndpoint(Environment::getEnv("SPARKPOST_EU"));
             }
             $subaccountId = self::config()->subaccount_id;
             if ($subaccountId) {
