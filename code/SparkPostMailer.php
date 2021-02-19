@@ -62,6 +62,9 @@ class SparkPostMailer extends Mailer
             if (Director::isDev()) {
                 $this->client->setCurlOption(CURLOPT_VERBOSE, true);
             }
+            if (defined('SPARKPOST_EU')) {
+                $this->client->setEuEndpoint(true);
+            }
             $subaccountId = self::config()->subaccount_id;
             if ($subaccountId) {
                 $this->client->setSubaccount($subaccountId);

@@ -9,8 +9,9 @@ class SparkPostApiClient
 {
 
     // CLIENT SETTINGS
-    const CLIENT_VERSION = '0.1';
+    const CLIENT_VERSION = '0.2';
     const API_ENDPOINT = 'https://api.sparkpost.com/api/v1';
+    const API_ENDPOINT_EU = 'https://api.eu.sparkpost.com/api/v1';
     const METHOD_GET = "GET";
     const METHOD_POST = "POST";
     const METHOD_PUT = "PUT";
@@ -49,6 +50,13 @@ class SparkPostApiClient
      * @var string
      */
     protected $key;
+
+    /**
+     * Is eu endpoint ?
+     *
+     * @var boolean
+     */
+    protected $euEndpoint = false;
 
     /**
      * Curl verbose log
@@ -102,6 +110,11 @@ class SparkPostApiClient
                 $this->key = SPARKPOST_API_KEY;
             }
         }
+        if (getenv('SPARKPOST_EU')) {
+            $this->euEndpoint = getenv('SPARKPOST_EU');
+        } elseif (defined('SPARKPOST_EU')) {
+            $this->euEndpoint = true;
+        }
         $this->subaccount = $subaccount;
         $this->curlOpts = array_merge($this->getDefaultCurlOptions(), $curlOpts);
     }
@@ -130,7 +143,7 @@ class SparkPostApiClient
     {
         if (!isset($this->curlOpts[$name])) {
             throw new InvalidArgumentException("$name is not a valid option. Valid options are : " .
-            implode(', ', array_keys($this->curlOpts)));
+                implode(', ', array_keys($this->curlOpts)));
         }
         return $this->curlOpts[$name];
     }
@@ -164,6 +177,26 @@ class SparkPostApiClient
     public function setKey($key)
     {
         $this->key = $key;
+    }
+
+    /**
+     * Get the use of eu endpoint
+     *
+     * @return string
+     */
+    public function getEuEndpoint()
+    {
+        return $this->euEndpoint;
+    }
+
+    /**
+     * Set the use of eu endpoint
+     *
+     * @param string $euEndpoint
+     */
+    public function setEuEndpoint($euEndpoint)
+    {
+        $this->euEndpoint = $euEndpoint;
     }
 
     /**
@@ -280,8 +313,9 @@ class SparkPostApiClient
      * 'useDraftTemplate'
      * 'inlineCss'
      *
+     * @link https://developers.sparkpost.com/api/transmissions.html
      * @param array $data
-     * @return array
+     * @return array An array containing 3 keys: total_rejected_recipients, total_accepted_recipients, id
      */
     public function createTransmission($data)
     {
@@ -374,7 +408,7 @@ class SparkPostApiClient
      * 'per_page' : Number of results to return per page. Must be between 1 and 10,000 (inclusive).
      * 'reason' : Bounce/failure/rejection reason that will be matched using a wildcard (e.g., %reason%)
      * 'recipients' : delimited list of recipients to search.
-     * 'subaccounts' : 	delimited list of subaccount ID’s to search..
+     * 'subaccounts' :  delimited list of subaccount ID’s to search..
      * 'template_ids' : delimited list of template ID's to search.
      * 'timezone' : Standard timezone identification string
      * 'to' : Datetime in format of YYYY-MM-DDTHH:MM
@@ -407,6 +441,7 @@ class SparkPostApiClient
      * [type] => delivery
      * [timestamp] =>  2050-01-01T11:57:36.000Z
      *
+     * @deprecated
      * @param array $params
      * @return array
      */
@@ -420,6 +455,77 @@ class SparkPostApiClient
         $params = array_merge($defaultParams, $params);
 
         return $this->makeRequest('message-events', self::METHOD_GET, $params);
+    }
+
+    /**
+     * Search for Message Events
+     *
+     * Parameters
+     * - from string, default is 24 hours ago
+     * - per_page number, default is 1000
+     * - event_ids string
+     * - events string, default is all event types
+     * - recipients string
+     * - recipient_domains string
+     * - from_addresses string
+     * - sending_domains string
+     * - subjects string
+     * - bounce_classes number
+     * - reasons string
+     * - campaigns string
+     * - templates string
+     * - sending_ips string
+     * - ip_pools string
+     * - subaccounts string
+     * - messages string
+     * - transmissions string
+     * - mailbox_providers string
+     * - mailbox_provider_regions string
+     * - ab_tests string
+     * - ab_test_versions number
+     *
+     * Result is an array of objects that looks like this
+     *
+     * "mailbox_provider" => "SomeProvider"
+     * "template_version" => "0"
+     * "friendly_from" => "noreply@testing.example.com"
+     * "subject" => "My email"
+     * "ip_pool" => "default"
+     * "sending_domain" => "testing.example.com"
+     * "rcpt_tags" => []
+     * "type" => "initial_open"
+     * "mailbox_provider_region" => "Global"
+     * "raw_rcpt_to" => "recipient@dest.com"
+     * "msg_from" => "msprvs1=46848646040zazea=bounces-99999-1@bounce.example.com"
+     * "geo_ip" => array:8 [▶]
+     * "rcpt_to" => "recipient@dest.com"
+     * "subaccount_id" => 1
+     * "transmission_id" => "1230984717797820762"
+     * "user_agent" => "Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)"
+     * "timestamp" => "2055-02-19T14:44:29.000Z"
+     * "click_tracking" => true
+     * "rcpt_meta" => []
+     * "message_id" => "122da1ce2f606b5c07dc"
+     * "ip_address" => "12.123.11.11"
+     * "initial_pixel" => true
+     * "recipient_domain" => "dest.com"
+     * "event_id" => "5454130313444582480096"
+     * "routing_domain" => "dest.com"
+     * "sending_ip" => "99.99.99.99"
+     * "template_id" => "template_693098471779782565"
+     * "delv_method" => "esmtp"
+     * "customer_id" => 99999
+     * "open_tracking" => true
+     * "injection_time" => "2055-02-19T14:43:45.000Z"
+     * "transactional" => "1"
+     * "msg_size" => "48613"
+     *
+     * @param array $params
+     * @return array
+     */
+    public function searchEvents($params = [])
+    {
+        return $this->makeRequest('events/message', self::METHOD_GET, $params);
     }
 
     /**
@@ -469,8 +575,10 @@ class SparkPostApiClient
     {
         if ($events === null) {
             // Default to the most used events
-            $events = ['delivery', 'injection', 'open', 'click', 'bounce', 'spam_complaint',
-                'list_unsubscribe', 'link_unsubscribe'];
+            $events = [
+                'delivery', 'injection', 'open', 'click', 'bounce', 'spam_complaint',
+                'list_unsubscribe', 'link_unsubscribe'
+            ];
         }
         $params = [
             'name' => $name,
@@ -632,8 +740,8 @@ class SparkPostApiClient
     public function verifySendingDomain($id)
     {
         return $this->makeRequest('sending-domains/' . $id . '/verify', self::METHOD_POST, [
-                'dkim_verify' => true,
-                'spf_verify' => true
+            'dkim_verify' => true,
+            'spf_verify' => true
         ]);
     }
 
@@ -673,7 +781,7 @@ class SparkPostApiClient
 
     /**
      * List all inbound domains
-     * 
+     *
      * @return array
      */
     public function listInboundDomains()
@@ -757,7 +865,7 @@ class SparkPostApiClient
 
     /**
      * Delete a relay webhook
-     * 
+     *
      * @param int $id
      * @return array
      */
@@ -896,9 +1004,13 @@ class SparkPostApiClient
         curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
         curl_setopt($ch, CURLOPT_USERAGENT, 'SparkPostApiClient v' . self::CLIENT_VERSION);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_URL, self::API_ENDPOINT . '/' . $endpoint);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, (int) $this->getCurlOption('connect_timeout'));
-        curl_setopt($ch, CURLOPT_TIMEOUT, (int) $this->getCurlOption('timeout'));
+        if ($this->euEndpoint) {
+            curl_setopt($ch, CURLOPT_URL, self::API_ENDPOINT_EU . '/' . $endpoint);
+        } else {
+            curl_setopt($ch, CURLOPT_URL, self::API_ENDPOINT . '/' . $endpoint);
+        }
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, (int)$this->getCurlOption('connect_timeout'));
+        curl_setopt($ch, CURLOPT_TIMEOUT, (int)$this->getCurlOption('timeout'));
 
         // Collect verbose data in a stream
         if ($this->getCurlOption('verbose')) {
@@ -948,7 +1060,7 @@ class SparkPostApiClient
         $this->results[] = $decodedResult;
 
         if (isset($decodedResult['errors'])) {
-            $errors = array_map(function($item) use($data) {
+            $errors = array_map(function ($item) use ($data) {
                 $message = $item['message'];
                 // Prepend code to message
                 if (isset($item['code'])) {
@@ -963,7 +1075,7 @@ class SparkPostApiClient
                         if (isset($data['content']['from'])) {
                             $from = $data['content']['from'];
                         }
-                        if ($from) {
+                        if ($from && is_string($from)) {
                             $domain = substr(strrchr($from, "@"), 1);
                             $message .= ' (' . $domain . ')';
                         }
