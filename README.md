@@ -71,6 +71,11 @@ This module create a new admin section that allows you to:
 NOTE : Make sure that you have a valid api key (not a subaccount key) to access
 features related to installation of the webhook through the CMS.
 
+Note that by default the messages are cached (or not) according to config. You
+can disable this with the following env key
+
+    SPARKPOST_ADMIN_CACHE=false
+
 ## Setting tags or metadata
 
 By using custom headers you can pass parameters to the api by following the

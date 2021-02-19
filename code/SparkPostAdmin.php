@@ -292,6 +292,9 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
      */
     public function getCacheEnabled()
     {
+        if (Environment::getEnv('SPARKPOST_ADMIN_CACHE')) {
+            return Environment::getEnv('SPARKPOST_ADMIN_CACHE');
+        }
         $v = $this->config()->cache_enabled;
         if ($v === null) {
             $v = self::$cache_enabled;
