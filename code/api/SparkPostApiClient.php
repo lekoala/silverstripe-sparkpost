@@ -925,8 +925,8 @@ class SparkPostApiClient
      */
     public function buildAddressFromString($string, $header_to = null)
     {
-        $email = self::get_email_from_rfc_email($string);
-        $name = self::get_displayname_from_rfc_email($string);
+        $email = SparkPostEmailUtils::get_email_from_rfc_email($string);
+        $name = SparkPostEmailUtils::get_displayname_from_rfc_email($string);
         return $this->buildAddress($email, $name, $header_to);
     }
 
@@ -1053,7 +1053,7 @@ class SparkPostApiClient
         } else {
             $decodedResult = json_decode($result, true);
             if (!$decodedResult) {
-                throw new Exception("Failed to decode $result : " . self::json_last_error_msg());
+                throw new Exception("Failed to decode $result : " . json_last_error_msg());
             }
         }
 
@@ -1129,59 +1129,5 @@ class SparkPostApiClient
     public function getLastResult()
     {
         return end($this->results);
-    }
-
-    /**
-     * Helper for json errors
-     *
-     * @staticvar array $ERRORS
-     * @return string
-     */
-    protected static function json_last_error_msg()
-    {
-        static $ERRORS = [
-            JSON_ERROR_NONE => 'No error',
-            JSON_ERROR_DEPTH => 'Maximum stack depth exceeded',
-            JSON_ERROR_STATE_MISMATCH => 'State mismatch (invalid or malformed JSON)',
-            JSON_ERROR_CTRL_CHAR => 'Control character error, possibly incorrectly encoded',
-            JSON_ERROR_SYNTAX => 'Syntax error',
-            JSON_ERROR_UTF8 => 'Malformed UTF-8 characters, possibly incorrectly encoded'
-        ];
-
-        $error = json_last_error();
-        return isset($ERRORS[$error]) ? $ERRORS[$error] : 'Unknown error';
-    }
-
-    /**
-     * Match all words and whitespace, will be terminated by '<'
-     *
-     * Note: use /u to support utf8 strings
-     *
-     * @param string $rfc_email_string
-     * @return string
-     */
-    protected static function get_displayname_from_rfc_email($rfc_email_string)
-    {
-        $name = preg_match('/[\w\s]+/u', $rfc_email_string, $matches);
-        $matches[0] = trim($matches[0]);
-        return $matches[0];
-    }
-
-    /**
-     * Extract parts between brackets
-     *
-     * @param string $rfc_email_string
-     * @return string
-     */
-    protected static function get_email_from_rfc_email($rfc_email_string)
-    {
-        if (strpos($rfc_email_string, '<') === false) {
-            return $rfc_email_string;
-        }
-        $mailAddress = preg_match('/(?:<)(.+)(?:>)$/', $rfc_email_string, $matches);
-        if (empty($matches)) {
-            return $rfc_email_string;
-        }
-        return $matches[1];
     }
 }
