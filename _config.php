@@ -2,4 +2,7 @@
 
 use LeKoala\SparkPost\SparkPostHelper;
 
-SparkPostHelper::init();
+// Prevent error if somehow class is not loaded
+if (class_exists(SparkPostHelper::class)) {
+    SparkPostHelper::init();
+}
