@@ -417,6 +417,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
 
         // This is a ugly hack to allow embedding a form into another form
         $fields->push($doSearch = new FormAction('doSearch', _t('SparkPostAdmin.DOSEARCH', 'Search')));
+        $doSearch->addExtraClass("btn-primary");
         $doSearch->setAttribute('onclick', "jQuery('#Form_SearchForm').append(jQuery('#Form_EditForm input,#Form_EditForm select').clone()).submit();");
 
         return $fields;
