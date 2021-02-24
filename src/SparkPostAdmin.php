@@ -227,10 +227,11 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             }
 
             // Add a refresh button
-            $refreshButton = new LiteralField('RefreshButton', $this->ButtonHelper(
+            $RefreshButtonHtml = $this->FormGroupHelper($this->ButtonHelper(
                 $this->Link() . '?refresh=true',
                 _t('SparkPostAdmin.REFRESH', 'Force data refresh from the API')
             ));
+            $refreshButton = new LiteralField('RefreshButton', $RefreshButtonHtml);
             $settingsTab->push($refreshButton);
 
             $fields->addFieldToTab('Root', $settingsTab);
@@ -553,6 +554,17 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         }
         $link .= '>' . $text . '</a>';
         return $link;
+    }
+
+    /**
+     * Wrap html in a form group
+     *
+     * @param string $html
+     * @return string
+     */
+    protected function FormGroupHelper($html)
+    {
+        return '<div class="form-group"><div class="form__fieldgroup form__field-holder form__field-holder--no-label">' . $html . '</div></div>';
     }
 
     /**
