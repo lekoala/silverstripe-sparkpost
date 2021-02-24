@@ -283,10 +283,19 @@ class SparkPostSwiftTransport implements Swift_Transport
         $contentType = $this->getMessagePrimaryContentType($message);
 
         $fromAddresses = $message->getFrom();
+
         $fromEmails = array_keys($fromAddresses);
         $fromFirstEmail = key($fromAddresses);
         $fromFirstName = current($fromAddresses);
+        if (SparkPostHelper::config()->override_admin_email && SparkPostHelper::isAdminEmail($fromFirstEmail)) {
+            $fromFirstEmail = SparkPostHelper::resolveDefaultFromEmail();
+        }
+        if (!$fromFirstName) {
+            $fromFirstName = EmailUtils::get_displayname_from_rfc_email($fromFirstEmail);
+        }
         $this->fromEmail = $fromFirstEmail;
+
+        d($fromFirstEmail, $fromFirstName, SparkPostHelper::config()->override_admin_email);
 
         $toAddresses = $message->getTo();
         $ccAddresses = $message->getCc() ? $message->getCc() : [];

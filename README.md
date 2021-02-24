@@ -52,6 +52,23 @@ Otherwise, you need to call the following line:
 SparkPostHelper::registerTransport();
 ```
 
+## Admin sender
+
+By default in SilverStripe, emails without a from email will use the Email::admin_email value.
+
+This is not convenient for websites using a value taken from the SiteConfig, as resolved with
+`SparkPostHelper::resolveDefaultFromEmail`.
+
+The SparkPostSwiftTransport can automatically take care of that and replace any admin email
+with the set value using the following config flag:
+
+```yaml
+LeKoala\SparkPost\SparkPostHelper:
+  override_admin_email: true
+```
+
+Make sure to set this after having processed the sparkpost config.
+
 ## Subaccounts support
 
 If you use a master api key, but need to [limit data access](https://developers.sparkpost.com/api/#/introduction/subaccounts),

@@ -19,6 +19,7 @@ LeKoala\SparkPost\SparkPostHelper:
   log_folder : 'silverstripe-cache/emails'
   siteconfig_from: 'DefaultFromEmail'
   siteconfig_to: 'ContactEmail'
+  override_admin_email: false
   provide_plain: true
   # Params can use native format or use mappings defined by SparkPostApiClient
   default_params:

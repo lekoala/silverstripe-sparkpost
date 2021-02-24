@@ -13,6 +13,7 @@ use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Control\Email\SwiftMailer;
 use LeKoala\SparkPost\Api\SparkPostApiClient;
 use LeKoala\SparkPost\SparkPostSwiftTransport;
+use SilverStripe\Core\Config\Config;
 
 /**
  * This configurable class helps decoupling the api client from SilverStripe
@@ -185,6 +186,15 @@ class SparkPostHelper
         return $mailer;
     }
 
+    /**
+     * Update admin email so that we use our config email
+     *
+     * @return void
+     */
+    public static function forceAdminEmailOverride()
+    {
+        Config::modify()->set(Email::class, 'admin_email', self::resolveDefaultFromEmailType());
+    }
 
     /**
      * Resolve default send from address
@@ -192,6 +202,7 @@ class SparkPostHelper
      * Keep in mind that an email using send() without a from
      * will inject the admin_email. Therefore, SiteConfig
      * will not be used
+     * See forceAdminEmailOverride() or use override_admin_email config
      *
      * @param string $from
      * @param bool $createDefault
@@ -199,8 +210,13 @@ class SparkPostHelper
      */
     public static function resolveDefaultFromEmail($from = null, $createDefault = true)
     {
+        $configEmail = self::getSenderFromSiteConfig();
         $original_from = $from;
         if (!empty($from)) {
+            // We have a set email but sending from admin => override if flag is set
+            if (self::isAdminEmail($from) && $configEmail && self::config()->override_admin_email) {
+                return $configEmail;
+            }
             // If we have a sender, validate its email
             $from = EmailUtils::get_email_from_rfc_email($from);
             if (filter_var($from, FILTER_VALIDATE_EMAIL)) {
@@ -208,12 +224,10 @@ class SparkPostHelper
             }
         }
         // Look in siteconfig for default sender
-        $config = SiteConfig::current_site_config();
-        $config_field = self::config()->siteconfig_from;
-        if ($config_field && !empty($config->$config_field)) {
-            return $config->$config_field;
+        if ($configEmail) {
+            return $configEmail;
         }
-        // Use admin email
+        // Use admin email if set
         if ($admin = Email::config()->admin_email) {
             return $admin;
         }
@@ -232,16 +246,52 @@ class SparkPostHelper
     public static function resolveDefaultFromEmailType()
     {
         // Look in siteconfig for default sender
-        $config = SiteConfig::current_site_config();
-        $config_field = self::config()->siteconfig_from;
-        if ($config_field && !empty($config->$config_field)) {
+        if (self::getSenderFromSiteConfig()) {
             return self::FROM_SITECONFIG;
         }
-        // Use admin email
-        if ($admin = Email::config()->admin_email) {
+        // Is admin email set ?
+        if (Email::config()->admin_email) {
             return self::FROM_ADMIN;
         }
         return self::FROM_DEFAULT;
+    }
+
+    /**
+     * @return string|false
+     */
+    public static function getSenderFromSiteConfig()
+    {
+        $config = SiteConfig::current_site_config();
+        $config_field = self::config()->siteconfig_from;
+        if ($config_field && !empty($config->$config_field)) {
+            return $config->$config_field;
+        }
+        return false;
+    }
+
+    /**
+     * @param string $email
+     * @return boolean
+     */
+    public static function isAdminEmail($email)
+    {
+        $admin_email = Email::config()->admin_email;
+        if (!$admin_email && $email) {
+            return false;
+        }
+        $rfc_email = EmailUtils::get_email_from_rfc_email($email);
+        $rfc_admin_email = EmailUtils::get_email_from_rfc_email($admin_email);
+        return $rfc_email == $rfc_admin_email;
+    }
+
+    /**
+     * @param string $email
+     * @return boolean
+     */
+    public static function isDefaultEmail($email)
+    {
+        $rfc_email = EmailUtils::get_email_from_rfc_email($email);
+        return $rfc_email == self::createDefaultEmail();
     }
 
     /**
