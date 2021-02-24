@@ -295,8 +295,6 @@ class SparkPostSwiftTransport implements Swift_Transport
         }
         $this->fromEmail = $fromFirstEmail;
 
-        d($fromFirstEmail, $fromFirstName, SparkPostHelper::config()->override_admin_email);
-
         $toAddresses = $message->getTo();
         $ccAddresses = $message->getCc() ? $message->getCc() : [];
         $bccAddresses = $message->getBcc() ? $message->getBcc() : [];
