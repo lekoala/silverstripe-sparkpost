@@ -21,6 +21,10 @@ class SparkPostHelper
 {
     use Configurable;
 
+    const FROM_SITECONFIG = "SiteConfig";
+    const FROM_ADMIN = "Admin";
+    const FROM_DEFAULT = "Default";
+
     /**
      * Client instance
      *
@@ -218,6 +222,26 @@ class SparkPostHelper
             return self::createDefaultEmail();
         }
         return false;
+    }
+
+    /**
+     * Returns what type of default email is used
+     *
+     * @return string
+     */
+    public static function resolveDefaultFromEmailType()
+    {
+        // Look in siteconfig for default sender
+        $config = SiteConfig::current_site_config();
+        $config_field = self::config()->siteconfig_from;
+        if ($config_field && !empty($config->$config_field)) {
+            return self::FROM_SITECONFIG;
+        }
+        // Use admin email
+        if ($admin = Email::config()->admin_email) {
+            return self::FROM_ADMIN;
+        }
+        return self::FROM_DEFAULT;
     }
 
     /**

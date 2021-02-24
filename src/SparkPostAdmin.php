@@ -226,13 +226,20 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
                 $settingsTab->push($webhookTabData);
             }
 
+            $toolsHtml = '<h2>Tools</h2>';
+
+            // Show default from email
+            $toolsHtml .= "<p>Default sending email: " . SparkPostHelper::resolveDefaultFromEmail() . " (" . SparkPostHelper::resolveDefaultFromEmailType() . ")</p>";
+
             // Add a refresh button
-            $RefreshButtonHtml = $this->FormGroupHelper($this->ButtonHelper(
+            $toolsHtml .= $this->ButtonHelper(
                 $this->Link() . '?refresh=true',
                 _t('SparkPostAdmin.REFRESH', 'Force data refresh from the API')
-            ));
-            $refreshButton = new LiteralField('RefreshButton', $RefreshButtonHtml);
-            $settingsTab->push($refreshButton);
+            );
+
+            $toolsHtml = $this->FormGroupHelper($toolsHtml);
+            $Tools = new LiteralField('Tools', $toolsHtml);
+            $settingsTab->push($Tools);
 
             $fields->addFieldToTab('Root', $settingsTab);
         }
