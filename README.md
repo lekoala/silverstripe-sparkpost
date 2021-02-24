@@ -69,6 +69,14 @@ LeKoala\SparkPost\SparkPostHelper:
 
 Make sure to set this after having processed the sparkpost config.
 
+## Check if emails can be used as sender
+
+As a convenience, this library offers an utility `SparkPostHelper::isEmailDomainReady` to help
+you determine if an email is ready to be used as a sender.
+
+Please note that this function makes an api call so you may not want to use this to often. It
+is a better to use this on verification screens or as part of a validation workflow.
+
 ## Subaccounts support
 
 If you use a master api key, but need to [limit data access](https://developers.sparkpost.com/api/#/introduction/subaccounts),

@@ -197,6 +197,33 @@ class SparkPostHelper
     }
 
     /**
+     * Check if email is ready to send emails
+     *
+     * @param string $email
+     * @return boolean
+     */
+    public static function isEmailDomainReady($email)
+    {
+        $parts = explode("@", $email);
+        $client = SparkPostHelper::getClient();
+        try {
+            $domain = $client->getSendingDomain(strtolower($parts[1]));
+        } catch (Exception $ex) {
+            return false;
+        }
+        if ($domain['status']['dkim_status'] != 'valid') {
+            return false;
+        }
+        if ($domain['status']['compliance_status'] != 'valid') {
+            return false;
+        }
+        if ($domain['status']['ownership_verified'] != true) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
      * Resolve default send from address
      *
      * Keep in mind that an email using send() without a from

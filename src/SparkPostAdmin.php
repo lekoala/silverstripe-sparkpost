@@ -766,8 +766,6 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
      */
     public function SendingDomainInstalled()
     {
-        $client = SparkPostHelper::getClient();
-
         $domain = $this->getCachedData('getSendingDomain', $this->getDomain(), 60 * self::SENDINGDOMAIN_CACHE_MINUTES);
 
         if (empty($domain)) {
