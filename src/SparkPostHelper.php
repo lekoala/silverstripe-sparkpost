@@ -217,6 +217,9 @@ class SparkPostHelper
         } catch (Exception $ex) {
             return false;
         }
+        if (!$domain) {
+            return false;
+        }
         if ($domain['status']['dkim_status'] != 'valid') {
             return false;
         }
