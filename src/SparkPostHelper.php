@@ -204,7 +204,13 @@ class SparkPostHelper
      */
     public static function isEmailDomainReady($email)
     {
+        if (!$email) {
+            return false;
+        }
         $parts = explode("@", $email);
+        if (count($parts) != 2) {
+            return false;
+        }
         $client = SparkPostHelper::getClient();
         try {
             $domain = $client->getSendingDomain(strtolower($parts[1]));
