@@ -229,7 +229,22 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             $toolsHtml = '<h2>Tools</h2>';
 
             // Show default from email
-            $toolsHtml .= "<p>Default sending email: " . SparkPostHelper::resolveDefaultFromEmail() . " (" . SparkPostHelper::resolveDefaultFromEmailType() . ")</p>";
+            $defaultEmail =  SparkPostHelper::resolveDefaultFromEmail();
+            $toolsHtml .= "<p>Default sending email: " . $defaultEmail . " (" . SparkPostHelper::resolveDefaultFromEmailType() . ")</p>";
+            if (!SparkPostHelper::isEmailDomainReady($defaultEmail)) {
+                $toolsHtml .= '<p style="color:red">The default email is not ready to send emails</p>';
+            }
+
+            // Show constants
+            if (SparkPostHelper::getEnvSendingDisabled()) {
+                $toolsHtml .= '<p style="color:red">Sending is disabled by .env configuration</p>';
+            }
+            if (SparkPostHelper::getEnvEnableLogging()) {
+                $toolsHtml .= '<p style="color:orange">Logging is enabled by .env configuration</p>';
+            }
+            if (SparkPostHelper::getEnvSubaccountId()) {
+                $toolsHtml .= '<p style="color:orange">Using subaccount id</p>';
+            }
 
             // Add a refresh button
             $toolsHtml .= $this->ButtonHelper(
