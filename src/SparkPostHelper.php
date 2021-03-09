@@ -44,6 +44,14 @@ class SparkPostHelper
     }
 
     /**
+     * @return string
+     */
+    public static function getApiKey()
+    {
+        return self::config()->api_key;
+    }
+
+    /**
      * Get the api client instance
      * @return SparkPostApiClient
      * @throws Exception
@@ -51,7 +59,7 @@ class SparkPostHelper
     public static function getClient()
     {
         if (!self::$client) {
-            $key = self::config()->api_key;
+            $key = self::getApiKey();
             if (empty($key)) {
                 throw new \Exception("api_key is not configured for " . __class__);
             }

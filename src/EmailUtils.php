@@ -2,48 +2,29 @@
 
 namespace LeKoala\SparkPost;
 
-use Pelago\Emogrifier;
+use Pelago\Emogrifier\CssInliner;
+use Pelago\Emogrifier\HtmlProcessor\HtmlPruner;
+use Pelago\Emogrifier\HtmlProcessor\CssToAttributeConverter;
 
 class EmailUtils
 {
     /**
-     * Inline styles using Pelago Emogrifier
+     * Inline styles using Pelago Emogrifier V5
      *
      * This is much better than the functionnality provided by SparkPost anyway
      *
+     * @link https://github.com/MyIntervals/emogrifier#more-complex-example
      * @param string $html
+     * @param string $css (optional) css to inline
      * @return string
      */
-    public static function inline_styles($html)
+    public static function inline_styles($html, $css = '')
     {
-        if (class_exists(CssInliner::class)) {
-            // V3
-            $cssInliner = CssInliner::fromHtml($html)->inlineCss('');
-            $domDocument = $cssInliner->getDomDocument();
+        $domDocument = CssInliner::fromHtml($html)->inlineCss($css)->getDomDocument();
 
-            // potentially, we could also remove classes
-            // HtmlPruner::fromDomDocument($domDocument)->removeElementsWithDisplayNone()
-            //     ->removeRedundantClassesAfterCssInlined($cssInliner);
-
-            // disableInvisibleNodeRemoval
-            $doc =   HtmlPruner::fromDomDocument($domDocument);
-            if (method_exists($doc, 'removeInvisibleNodes')) {
-                $doc->removeInvisibleNodes();
-            } else {
-                $doc->removeElementsWithDisplayNone();
-            }
-
-            // enableCssToHtmlMapping
-            $html = CssToAttributeConverter::fromDomDocument($domDocument)
-                ->convertCssToVisualAttributes()->render();
-        } else {
-            // V2
-            $emogrifier = new Emogrifier();
-            $emogrifier->disableInvisibleNodeRemoval();
-            $emogrifier->enableCssToHtmlMapping();
-            $emogrifier->setHtml($html);
-            $html = $emogrifier->emogrify();
-        }
+        HtmlPruner::fromDomDocument($domDocument)->removeElementsWithDisplayNone();
+        $html = CssToAttributeConverter::fromDomDocument($domDocument)
+            ->convertCssToVisualAttributes()->render();
 
         return $html;
     }

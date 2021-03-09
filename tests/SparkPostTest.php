@@ -40,6 +40,10 @@ class SparkPostTest extends SapphireTest
 
     public function testSetup()
     {
+        if (!SparkPostHelper::getApiKey()) {
+            return $this->markTestIncomplete("No api key set for test");
+        }
+
         $inst = SparkPostHelper::registerTransport();
         $mailer = SparkPostHelper::getMailer();
         $this->assertTrue($inst === $mailer);
@@ -47,6 +51,10 @@ class SparkPostTest extends SapphireTest
 
     public function testClient()
     {
+        if (!SparkPostHelper::getApiKey()) {
+            return $this->markTestIncomplete("No api key set for test");
+        }
+
         $client = SparkPostHelper::getClient();
         $result = $client->listAllSendingDomains();
 
@@ -70,6 +78,10 @@ class SparkPostTest extends SapphireTest
 
     public function testSending()
     {
+        if (!SparkPostHelper::getApiKey()) {
+            return $this->markTestIncomplete("No api key set for test");
+        }
+
         $test_to = Environment::getEnv('SPARKPOST_TEST_TO');
         $test_from = Environment::getEnv('SPARKPOST_TEST_FROM');
         if (!$test_from || !$test_to) {

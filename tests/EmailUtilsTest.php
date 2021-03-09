@@ -56,8 +56,8 @@ class EmailUtilsTest extends SapphireTest
 
     public function testInlineStyles()
     {
-        if (!class_exists(\Pelago\Emogrifier::class)) {
-            return $this->markTestIncomplete("Install Pelago\Emogrifier to run this test");
+        if (!class_exists(\Pelago\Emogrifier\CssInliner::class)) {
+            return $this->markTestIncomplete("Install pelago/emogrifier to run this test");
         }
 
         $html = <<<HTML
@@ -84,7 +84,7 @@ HTML;
     {
         $someHtml = '   Some<br/>Text <a href="http://test.com">Link</a> <strong>End</strong>    ';
 
-        $textResult = "Some\r\nText Link (http://test.com) End";
+        $textResult = "Some\r\nText Link (http://test.com) *End*";
 
         $process = EmailUtils::convert_html_to_text($someHtml);
 
