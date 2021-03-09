@@ -2,8 +2,7 @@ language: php
 
 os: linux
 
-# https://github.com/travis-ci/travis-ci/issues/8863
-dist: trusty
+dist: xenial
 
 services:
   - mysql
@@ -25,12 +24,12 @@ jobs:
       env:
         - DB=PGSQL
         - PDO=1
+        - PHPCS_TEST=1
+        - PHPUNIT_TEST=1
     - php: 7.3
       env:
         - DB=MYSQL
         - PDO=1
-        - PHPCS_TEST=1
-        - PHPUNIT_TEST=1
     - php: 7.4
       env:
         - DB=MYSQL
