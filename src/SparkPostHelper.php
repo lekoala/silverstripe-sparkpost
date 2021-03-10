@@ -175,6 +175,11 @@ class SparkPostHelper
         return  Environment::getEnv('SPARKPOST_SUBACCOUNT_ID');
     }
 
+    public static function getEnvForceSender()
+    {
+        return  Environment::getEnv('SPARKPOST_FORCE_SENDER');
+    }
+
     /**
      * Register the transport with the client
      *

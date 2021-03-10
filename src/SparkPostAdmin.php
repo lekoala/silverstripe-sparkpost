@@ -245,6 +245,9 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             if (SparkPostHelper::getEnvSubaccountId()) {
                 $toolsHtml .= '<p style="color:orange">Using subaccount id</p>';
             }
+            if (SparkPostHelper::getEnvForceSender()) {
+                $toolsHtml .= '<p style="color:orange">Sender is forced to ' . SparkPostHelper::getEnvForceSender() . '</p>';
+            }
 
             // Add a refresh button
             $toolsHtml .= $this->ButtonHelper(
