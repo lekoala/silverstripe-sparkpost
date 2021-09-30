@@ -209,8 +209,8 @@ class SparkPostMailer extends Mailer
             $email = $address['email'];
             $name = $address['name'];
         } elseif (strpos($address, '<') !== false) {
-            $email = self::get_email_from_rfc_email($address);
-            $name = self::get_displayname_from_rfc_email($address);
+            $email = SparkPostEmailUtils::get_email_from_rfc_email($address);
+            $name = SparkPostEmailUtils::get_displayname_from_rfc_email($address);
         } else {
             $email = $address;
             $name = null;
@@ -484,7 +484,7 @@ class SparkPostMailer extends Mailer
         $original_from = $from;
         if (!empty($from)) {
             // If we have a sender, validate its email
-            $from = self::get_email_from_rfc_email($from);
+            $from = SparkPostEmailUtils::get_email_from_rfc_email($from);
             if (filter_var($from, FILTER_VALIDATE_EMAIL)) {
                 return $original_from;
             }
@@ -517,7 +517,7 @@ class SparkPostMailer extends Mailer
         }
         $original_to = $to;
         if (!empty($to)) {
-            $to = self::get_email_from_rfc_email($to);
+            $to = SparkPostEmailUtils::get_email_from_rfc_email($to);
             if (filter_var($to, FILTER_VALIDATE_EMAIL)) {
                 return $original_to;
             }
