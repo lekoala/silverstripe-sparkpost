@@ -1,6 +1,6 @@
 # SilverStripe SparkPost module
 
-[![Build Status](https://travis-ci.org/lekoala/silverstripe-sparkpost.svg?branch=master)](https://travis-ci.org/lekoala/silverstripe-sparkpost)
+[![Build Status](https://travis-ci.com/lekoala/silverstripe-sparkpost.svg?branch=master)](https://travis-ci.com/lekoala/silverstripe-sparkpost)
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/lekoala/silverstripe-sparkpost/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/lekoala/silverstripe-sparkpost/?branch=master)
 [![Code Coverage](https://scrutinizer-ci.com/g/lekoala/silverstripe-sparkpost/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/lekoala/silverstripe-sparkpost/?branch=master)
 [![Build Status](https://scrutinizer-ci.com/g/lekoala/silverstripe-sparkpost/badges/build.png?b=master)](https://scrutinizer-ci.com/g/lekoala/silverstripe-sparkpost/build-status/master)

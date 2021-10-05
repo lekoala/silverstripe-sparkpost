@@ -43,13 +43,13 @@
     },
     "autoload": {
         "psr-4": {
-            "LeKoala\\SparkPost\\": "code/",
+            "LeKoala\\SparkPost\\": "src/",
             "LeKoala\\SparkPost\\Test\\": "tests/"
         }
     },
     "scripts": {
-        "lint": "phpcs code/ tests/",
-        "lint-clean": "phpcbf code/ tests/"
+        "lint": "phpcs src/ tests/",
+        "lint-clean": "phpcbf src/ tests/"
     },
     "minimum-stability": "dev",
     "prefer-stable": true
