@@ -33,6 +33,7 @@ use SilverStripe\Control\Email\SwiftMailer;
 use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Security\PermissionProvider;
 use LeKoala\SparkPost\SparkPostSwiftTransport;
+use SilverStripe\Security\DefaultAdminService;
 use SilverStripe\Forms\GridField\GridFieldConfig;
 use SilverStripe\Forms\GridField\GridFieldFooter;
 use SilverStripe\Forms\GridField\GridFieldDetailForm;
@@ -65,6 +66,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         "doUninstallHook",
         "doInstallDomain",
         "doUninstallDomain",
+        "send_test",
     ];
 
     private static $cache_enabled = true;
@@ -123,6 +125,25 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         return parent::index($request);
     }
 
+    public function send_test($request)
+    {
+        if (!$this->CanConfigureApi()) {
+            return $this->httpError(404);
+        }
+        $service = DefaultAdminService::create();
+        $to = $request->getVar('to');
+        if (!$to) {
+            $to = $service->findOrCreateDefaultAdmin()->Email;
+        }
+        $email = Email::create();
+        $email->setSubject("Test email");
+        $email->setBody("Test " . date('Y-m-d H:i:s'));
+        $email->setTo($to);
+
+        $result = $email->send();
+        var_dump($result);
+    }
+
     /**
      * @return Session
      */
@@ -171,6 +192,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
                 $messageListConfig
             )->addExtraClass("messages_grid");
 
+            /** @var GridFieldDataColumns $columns  */
             $columns = $messageListConfig->getComponentByType(GridFieldDataColumns::class);
             $columns->setDisplayFields([
                 'transmission_id' => _t('SparkPostAdmin.EventTransmissionId', 'Id'),
@@ -194,9 +216,11 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             }
 
             if ($validator) {
-                $messageListConfig
-                    ->getComponentByType(GridFieldDetailForm::class)
-                    ->setValidator($validator);
+                /** @var GridFieldDetailForm $detailForm  */
+                $detailForm = $messageListConfig->getComponentByType(GridFieldDetailForm::class);
+                if ($detailForm) {
+                    $detailForm->setValidator($validator);
+                }
             }
         }
 
@@ -318,6 +342,9 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
      */
     public function getCacheEnabled()
     {
+        if (isset($_GET['disable_cache'])) {
+            return false;
+        }
         if (Environment::getEnv('SPARKPOST_DISABLE_CACHE')) {
             return false;
         }
@@ -722,9 +749,12 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         $url = $this->WebhookUrl();
         $description = SiteConfig::current_site_config()->Title;
 
+        $defaultAdmin = Environment::getEnv('SS_DEFAULT_ADMIN_USERNAME');
+        $defaultPassword = Environment::getEnv('SS_DEFAULT_ADMIN_PASSWORD');
+
         try {
-            if (defined('SS_DEFAULT_ADMIN_USERNAME') && SS_DEFAULT_ADMIN_USERNAME) {
-                $client->createSimpleWebhook($description, $url, null, true, ['username' => SS_DEFAULT_ADMIN_USERNAME, 'password' => SS_DEFAULT_ADMIN_PASSWORD]);
+            if ($defaultAdmin) {
+                $client->createSimpleWebhook($description, $url, null, true, ['username' => $defaultAdmin, 'password' => $defaultPassword]);
             } else {
                 $client->createSimpleWebhook($description, $url);
             }

@@ -17,7 +17,7 @@
     ],
     "require": {
         "php": ">7.2",
-        "silverstripe/framework": "^4.4",
+        "silverstripe/framework": "^4.9",
         "symbiote/silverstripe-gridfieldextensions": "^3.2",
         "pelago/emogrifier": "^5.0",
         "composer/ca-bundle": "*"

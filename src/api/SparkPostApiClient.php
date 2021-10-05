@@ -113,9 +113,6 @@ class SparkPostApiClient
             $this->key = $key;
         } else {
             $this->key = getenv('SPARKPOST_API_KEY');
-            if (!$this->key && defined('SPARKPOST_API_KEY')) {
-                $this->key = SPARKPOST_API_KEY;
-            }
         }
         if (getenv('SPARKPOST_EU')) {
             $this->euEndpoint = getenv('SPARKPOST_EU');

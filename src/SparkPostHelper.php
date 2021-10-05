@@ -14,6 +14,7 @@ use SilverStripe\Control\Email\SwiftMailer;
 use LeKoala\SparkPost\Api\SparkPostApiClient;
 use LeKoala\SparkPost\SparkPostSwiftTransport;
 use SilverStripe\Core\Config\Config;
+use Swift_Mailer;
 
 /**
  * This configurable class helps decoupling the api client from SilverStripe
@@ -194,7 +195,7 @@ class SparkPostHelper
             throw new Exception("Mailer must be an instance of " . SwiftMailer::class . " instead of " . get_class($mailer));
         }
         $transport = new SparkPostSwiftTransport($client);
-        $newSwiftMailer = $mailer->getSwiftMailer()->newInstance($transport);
+        $newSwiftMailer = new Swift_Mailer($transport);
         $mailer->setSwiftMailer($newSwiftMailer);
         return $mailer;
     }

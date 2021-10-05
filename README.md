@@ -17,13 +17,13 @@
 
 Define in your .env file the following variable
 
-	SPARKPOST_API_KEY='YOUR_API_KEY_HERE'
+    SPARKPOST_API_KEY='YOUR_API_KEY_HERE'
 
 or by defining the api key in your config.yml
 
 ```yaml
 LeKoala\SparkPost\SparkPostHelper:
-    api_key: 'YOUR_API_KEY_HERE'
+    api_key: "YOUR_API_KEY_HERE"
 ```
 
 This module uses a custom client (not the official PHP SDK).
@@ -33,7 +33,7 @@ You can also autoconfigure the module with the following environment variables
     # Will log emails in the temp folders
     SPARKPOST_ENABLE_LOGGING=true
     # Will disable sending (useful in development)
-	SPARKPOST_SENDING_DISABLED=true
+    SPARKPOST_SENDING_DISABLED=true
 
 By defining the Api Key, the module will register a new transport that will be used to send all emails.
 
@@ -64,7 +64,7 @@ with the set value using the following config flag:
 
 ```yaml
 LeKoala\SparkPost\SparkPostHelper:
-  override_admin_email: true
+    override_admin_email: true
 ```
 
 Make sure to set this after having processed the sparkpost config.
@@ -90,8 +90,8 @@ or through the YML config.
 
 This module create a new admin section that allows you to:
 
-- List all messages events and allow searching them
-- Have a settings tab to list and configure sending domains and webhook
+-   List all messages events and allow searching them
+-   Have a settings tab to list and configure sending domains and webhook
 
 NOTE : Make sure that you have a valid api key (not a subaccount key) to access
 features related to installation of the webhook through the CMS.
@@ -125,26 +125,29 @@ $email->getSwiftMessage()->getHeaders()->addTextHeader('X-MSYS-API', json_encode
 
 From the SparkPost Admin, you can setup a webhook for your website. This webhook
 will be called and SparkPostController will take care of handling all events
-for you. It is registered under the __sparkpost/ route.
+for you. It is registered under the \_\_sparkpost/ route.
 
 By default, SparkPostController will do nothing. Feel free to add your own
 extensions to SparkPostController to define your own rules, like "Send an
 email to the admin when a receive a spam complaint".
 
 SparkPostController provides the following extension point for all events:
-- onAnyEvent
+
+-   onAnyEvent
 
 And the following extensions points depending on the type of the event:
-- onEngagementEvent
-- onGenerationEvent
-- onMessageEvent
-- onUnsubscribeEvent
+
+-   onEngagementEvent
+-   onGenerationEvent
+-   onMessageEvent
+-   onUnsubscribeEvent
 
 You can also inspect the whole payload and the batch id with
-- beforeProcessPayload : to check if a payload has been processed
-- afterProcessPayload : to mark the payload has been processed or log information
 
-You can test if your extension is working properly by visiting /__sparkpost/test
+-   beforeProcessPayload : to check if a payload has been processed
+-   afterProcessPayload : to mark the payload has been processed or log information
+
+You can test if your extension is working properly by visiting /\_\_sparkpost/test
 if your site is in dev mode. It will load sample data from the API.
 
 Please ensure that the url for the webhook is properly configured if required
@@ -152,7 +155,7 @@ by using the following configuration
 
 ```yaml
 LeKoala\SparkPost\SparkPostAdmin:
-    webhook_base_url: 'https://my.domain.com/'
+    webhook_base_url: "https://my.domain.com/"
 ```
 
 You can also define the following environment variable to log all incoming payload into a given
@@ -195,10 +198,31 @@ LeKoala\SparkPost\SparkPostHelper:
     inlineCss: true
 ```
 
+## Swift Mailer 6
+
+Swift Mailer 6 introduced quite a lot of breaking changes, make sure you are not using any of those:
+
+-   added Swift_Transport::ping()
+-   removed Swift_Mime_HeaderFactory, Swift_Mime_HeaderSet, Swift_Mime_Message, Swift_Mime_MimeEntity,
+    and Swift_Mime_ParameterizedHeader interfaces
+-   removed Swift_MailTransport and Swift_Transport_MailTransport
+-   removed Swift_Encoding
+-   removed the Swift_Transport_MailInvoker interface and Swift_Transport_SimpleMailInvoker class
+-   removed the Swift_SignedMessage class
+-   removed newInstance() methods everywhere
+-   methods operating on Date header now use DateTimeImmutable object instead of Unix timestamp;
+    Swift_Mime_Headers_DateHeader::getTimestamp()/setTimestamp() renamed to getDateTime()/setDateTime()
+-   bumped minimum version to PHP 7.0
+-   removed Swift_Validate and replaced by egulias/email-validator
+
 ## Compatibility
-Tested with 4.x
+
+Tested with SilverStripe 4.9+
+
+For 4.x compatibility, use branch 2
 
 For 3.x compatibility, use branch 1
 
 ## Maintainer
+
 LeKoala - thomas@lekoala.be

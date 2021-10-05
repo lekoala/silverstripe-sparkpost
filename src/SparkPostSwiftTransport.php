@@ -6,8 +6,10 @@ use Exception;
 use \Swift_MimePart;
 use \Swift_Transport;
 use \Swift_Attachment;
-use \Swift_Mime_Message;
+use \Swift_Mime_SimpleMessage;
+use \Swift_Mime_Headers_UnstructuredHeader;
 use \Swift_Events_SendEvent;
+use \Swift_Mime_Header;
 use Psr\Log\LoggerInterface;
 use \Swift_Events_EventListener;
 use SilverStripe\Control\Director;
@@ -89,12 +91,17 @@ class SparkPostSwiftTransport implements Swift_Transport
         $this->isStarted = false;
     }
 
+    public function ping()
+    {
+        return true;
+    }
+
     /**
-     * @param Swift_Mime_Message $message
-     * @param null $failedRecipients
+     * @param Swift_Mime_SimpleMessage $message
+     * @param string[] $failedRecipients
      * @return int Number of messages sent
      */
-    public function send(Swift_Mime_Message $message, &$failedRecipients = null)
+    public function send(Swift_Mime_SimpleMessage $message, &$failedRecipients = null)
     {
         $this->resultApi = null;
         if ($event = $this->eventDispatcher->createSendEvent($this, $message)) {
@@ -151,11 +158,11 @@ class SparkPostSwiftTransport implements Swift_Transport
     /**
      * Log message content
      *
-     * @param Swift_Mime_Message $message
+     * @param Swift_Mime_SimpleMessage $message
      * @param array $results Results from the api
      * @return void
      */
-    protected function logMessageContent(Swift_Mime_Message $message, $results = [])
+    protected function logMessageContent(Swift_Mime_SimpleMessage $message, $results = [])
     {
         $subject = $message->getSubject();
         $body = $message->getBody();
@@ -247,10 +254,10 @@ class SparkPostSwiftTransport implements Swift_Transport
     }
 
     /**
-     * @param Swift_Mime_Message $message
+     * @param Swift_Mime_SimpleMessage $message
      * @return string
      */
-    protected function getMessagePrimaryContentType(Swift_Mime_Message $message)
+    protected function getMessagePrimaryContentType(Swift_Mime_SimpleMessage $message)
     {
         $contentType = $message->getContentType();
 
@@ -258,7 +265,7 @@ class SparkPostSwiftTransport implements Swift_Transport
             return $contentType;
         }
 
-        // SwiftMailer hides the content type set in the constructor of Swift_Mime_Message as soon
+        // SwiftMailer hides the content type set in the constructor of Swift_Mime_SimpleMessage as soon
         // as you add another part to the message. We need to access the protected property
         // _userContentType to get the original type.
         $messageRef = new \ReflectionClass($message);
@@ -272,13 +279,28 @@ class SparkPostSwiftTransport implements Swift_Transport
     }
 
     /**
+     * @param Swift_Mime_Headers_UnstructuredHeader|null $header
+     * @return string
+     */
+    protected static function getHeaderValue(Swift_Mime_Header $header = null)
+    {
+        if (!$header) {
+            return '';
+        }
+        if (method_exists($header, 'getValue')) {
+            return $header->getValue();
+        }
+        return $header->getFieldBody();
+    }
+
+    /**
      * Convert a Swift Message to a transmission
      *
-     * @param Swift_Mime_Message $message
+     * @param Swift_Mime_SimpleMessage $message
      * @return array SparkPost Send Message
      * @throws \Swift_SwiftException
      */
-    public function getTransmissionFromMessage(Swift_Mime_Message $message)
+    public function getTransmissionFromMessage(Swift_Mime_SimpleMessage $message)
     {
         $contentType = $this->getMessagePrimaryContentType($message);
 
@@ -313,19 +335,20 @@ class SparkPostSwiftTransport implements Swift_Transport
 
         // Mandrill compatibility
         // Data is merge with transmission and removed from headers
-        // @link https://mandrill.zendesk.com/hc/en-us/articles/205582467-How-to-Use-Tags-in-Mandrill
+        // @link https://mailchimp.com/developer/transactional/docs/tags-metadata/#tags
         if ($message->getHeaders()->has('X-MC-Tags')) {
             $tagsHeader = $message->getHeaders()->get('X-MC-Tags');
-            $tags = explode(',', $tagsHeader->getValue());
+            $tags = explode(',', self::getHeaderValue($tagsHeader));
             $message->getHeaders()->remove('X-MC-Tags');
         }
         if ($message->getHeaders()->has('X-MC-Metadata')) {
             $metadataHeader = $message->getHeaders()->get('X-MC-Metadata');
-            $metadata = json_decode($metadataHeader->getValue(), JSON_OBJECT_AS_ARRAY);
+            $metadata = json_decode(self::getHeaderValue($metadataHeader), JSON_OBJECT_AS_ARRAY);
             $message->getHeaders()->remove('X-MC-Metadata');
         }
         if ($message->getHeaders()->has('X-MC-InlineCSS')) {
-            $inlineCss = $message->getHeaders()->get('X-MC-InlineCSS')->getValue();
+            $inlineHeader = $message->getHeaders()->get('X-MC-InlineCSS');
+            $inlineCss = self::getHeaderValue($inlineHeader);
             $message->getHeaders()->remove('X-MC-InlineCSS');
         }
 
@@ -334,7 +357,8 @@ class SparkPostSwiftTransport implements Swift_Transport
         // @link https://developers.sparkpost.com/api/smtp-api.html
         $msysHeader = [];
         if ($message->getHeaders()->has('X-MSYS-API')) {
-            $msysHeader = json_decode($message->getHeaders()->get('X-MSYS-API')->getValue(), JSON_OBJECT_AS_ARRAY);
+            $msysHeaderObj = $message->getHeaders()->get('X-MSYS-API');
+            $msysHeader = json_decode(self::getHeaderValue($msysHeaderObj), JSON_OBJECT_AS_ARRAY);
             if (!empty($msysHeader['tags'])) {
                 $tags = array_merge($tags, $msysHeader['tags']);
             }
@@ -434,7 +458,8 @@ class SparkPostSwiftTransport implements Swift_Transport
 
         // Custom unsubscribe list
         if ($message->getHeaders()->has('List-Unsubscribe')) {
-            $headers['List-Unsubscribe'] = $message->getHeaders()->get('List-Unsubscribe')->getValue();
+            $unsubHeader = $message->getHeaders()->get('List-Unsubscribe');
+            $headers['List-Unsubscribe'] = self::getHeaderValue($unsubHeader);
         }
 
         $defaultParams = SparkPostHelper::config()->default_params;
