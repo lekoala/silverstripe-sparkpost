@@ -230,17 +230,30 @@ class SparkPostController extends Controller
 
         // Check credentials if defined
         $isAuthenticated = true;
+        $authError = null;
         if (SparkPostHelper::getWebhookUsername()) {
             $requestUser = $req->getHeader('php_auth_user');
             $requestPassword = $req->getHeader('php_auth_pw');
+            if (!$requestUser) {
+                $requestUser = $_SERVER['PHP_AUTH_USER'];
+            }
+            if (!$requestPassword) {
+                $requestPassword = $_SERVER['PHP_AUTH_PW'];
+            }
 
-            $hasSuppliedCredentials = !($requestUser && $requestPassword);
+            $hasSuppliedCredentials = $requestUser && $requestPassword;
             if ($hasSuppliedCredentials) {
                 $user = SparkPostHelper::getWebhookUsername();
                 $password = SparkPostHelper::getWebhookPassword();
                 $isAuthenticated = ($requestUser == $user && $requestPassword == $password);
+                if ($user != $requestUser) {
+                    $authError = "User $requestUser doesn't match";
+                } elseif ($password != $requestPassword) {
+                    $authError = "Password $requestPassword don't match";
+                }
             } else {
                 $isAuthenticated = false;
+                $authError = "No credentials";
             }
         }
 
@@ -255,6 +268,7 @@ class SparkPostController extends Controller
             if (is_dir($dir)) {
                 $payload['@headers'] = $req->getHeaders();
                 $payload['@isAuthenticated'] = $isAuthenticated;
+                $payload['@authError'] = $authError;
                 $prettyPayload = json_encode($payload, JSON_PRETTY_PRINT);
                 $time = date('Ymd-His');
                 file_put_contents($dir . '/' . $time . '_' . $batchId . '.json', $prettyPayload);
