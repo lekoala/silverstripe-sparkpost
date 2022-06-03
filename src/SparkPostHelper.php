@@ -176,6 +176,11 @@ class SparkPostHelper
         return  Environment::getEnv('SPARKPOST_SUBACCOUNT_ID');
     }
 
+    public static function getSubaccountId()
+    {
+        return self::config()->subaccount_id;
+    }
+
     public static function getEnvForceSender()
     {
         return  Environment::getEnv('SPARKPOST_FORCE_SENDER');

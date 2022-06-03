@@ -28,7 +28,6 @@ use SilverStripe\Security\Permission;
 use LeKoala\SparkPost\SparkPostHelper;
 use SilverStripe\Forms\CompositeField;
 use SilverStripe\SiteConfig\SiteConfig;
-use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Control\Email\SwiftMailer;
 use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Security\PermissionProvider;
@@ -245,7 +244,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             $settingsTab->push($domainTabData);
 
             // Show webhook options if not using a subaccount key
-            if (!$this->subaccountKey) {
+            if (!SparkPostHelper::getSubaccountId() && self::config()->show_webhook_tab) {
                 $webhookTabData = $this->WebhookTab();
                 $settingsTab->push($webhookTabData);
             }
@@ -266,7 +265,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             if (SparkPostHelper::getEnvEnableLogging()) {
                 $toolsHtml .= '<p style="color:orange">Logging is enabled by .env configuration</p>';
             }
-            if (SparkPostHelper::getEnvSubaccountId()) {
+            if (SparkPostHelper::getSubaccountId()) {
                 $toolsHtml .= '<p style="color:orange">Using subaccount id</p>';
             }
             if (SparkPostHelper::getEnvForceSender()) {
@@ -661,7 +660,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     /**
      * Check if webhook is installed
      *
-     * @return array
+     * @return array|false
      */
     public function WebhookInstalled()
     {
@@ -673,6 +672,25 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         $url = $this->WebhookUrl();
         foreach ($list as $el) {
             if (!empty($el['target']) && $el['target'] === $url) {
+                /*
+                ^ array:13 [▼
+  "auth_token" => false
+  "auth_type" => "basic"
+  "name" => "Testing Webhook"
+  "auth_credentials" => array:2 [▶]
+  "events" => array:19 [▶]
+  "target" => "https://mydomain.com/sparkpost/incoming"
+  "custom_headers" => []
+  "auth_request_details" => []
+  "id" => "xxxxxx"
+  "last_successful" => null
+  "last_failure" => null
+  "active" => false
+  "links" => array:1 [▼
+    0 => array:3 [▶]
+  ]
+]
+*/
                 return $el;
             }
         }
@@ -698,10 +716,11 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
      */
     public function WebhookTab()
     {
-        if ($this->WebhookInstalled()) {
-            return $this->UninstallHookForm();
+        $webhook = $this->WebhookInstalled();
+        if ($webhook) {
+            return $this->UninstallHookForm($webhook);
         }
-        return $this->InstallHookForm();
+        return $this->InstallHookForm($webhook);
     }
 
     /**
@@ -722,9 +741,10 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     /**
      * Install hook form
      *
+     * @param array $data
      * @return FormField
      */
-    public function InstallHookForm()
+    public function InstallHookForm($data)
     {
         $fields = new CompositeField();
         $fields->push(new LiteralField('Info', $this->MessageHelper(
@@ -769,15 +789,38 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     /**
      * Uninstall hook form
      *
+     * @param array $data
      * @return FormField
      */
-    public function UninstallHookForm()
+    public function UninstallHookForm($data)
     {
         $fields = new CompositeField();
-        $fields->push(new LiteralField('Info', $this->MessageHelper(
-            _t('SparkPostAdmin.WebhookInstalled', 'Webhook is installed and accessible at the following url {url}.', ['url' => $this->WebhookUrl()]),
-            'good'
-        )));
+
+        if ($data['active']) {
+            $fields->push(new LiteralField('Info', $this->MessageHelper(
+                _t('SparkPostAdmin.WebhookInstalled', 'Webhook is installed but inactive at the following url {url}.', ['url' => $this->WebhookUrl()]),
+                'warning'
+            )));
+        } else {
+            $fields->push(new LiteralField('Info', $this->MessageHelper(
+                _t('SparkPostAdmin.WebhookInstalled', 'Webhook is installed and accessible at the following url {url}.', ['url' => $this->WebhookUrl()]),
+                'good'
+            )));
+        }
+
+        if ($data['last_successful']) {
+            $fields->push(new LiteralField('LastSuccess', $this->MessageHelper(
+                _t('SparkPostAdmin.WebhookLastSuccess', 'Webhook was last called successfully at {date}.', ['date' => $data['last_successful']]),
+                'good'
+            )));
+        }
+        if ($data['last_failure']) {
+            $fields->push(new LiteralField('LastFailure', $this->MessageHelper(
+                _t('SparkPostAdmin.WebhookLastFailure', 'Webhook last failure was at {date}.', ['date' => $data['last_failure']]),
+                'bad'
+            )));
+        }
+
         $fields->push(new LiteralField('doUninstallHook', $this->ButtonHelper(
             $this->Link('doUninstallHook'),
             _t('SparkPostAdmin.DOUNINSTALL_WEBHOOK', 'Uninstall webhook'),
@@ -858,11 +901,6 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         $list = new ArrayList();
         if ($domains) {
             foreach ($domains as $domain) {
-                // We are using a subaccount api key
-                if (!isset($domain['shared_with_subaccounts'])) {
-                    $this->subaccountKey = true;
-                }
-
                 $list->push(new ArrayData([
                     'Domain' => $domain['domain'],
                     'SPF' => $domain['status']['spf_status'],

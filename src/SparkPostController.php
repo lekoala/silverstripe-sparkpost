@@ -9,7 +9,6 @@ use SilverStripe\Core\Environment;
 use SilverStripe\Control\Controller;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Security\Permission;
-use SilverStripe\Core\Injector\Injector;
 use LeKoala\SparkPost\Api\SparkPostApiClient;
 
 /**

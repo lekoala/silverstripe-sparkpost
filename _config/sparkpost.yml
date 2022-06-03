@@ -30,6 +30,7 @@ LeKoala\SparkPost\SparkPostHelper:
   inline_styles: true
 LeKoala\SparkPost\SparkPostAdmin:
   cache_enabled: true
+  show_webhook_tab: true
   inbound_subdomain: 'emails'
   # Defaults to current url or default domain based on default sender
   webhook_base_url: ''
