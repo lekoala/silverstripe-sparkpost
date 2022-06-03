@@ -231,11 +231,14 @@ class SparkPostController extends Controller
         // Check credentials if defined
         $isAuthenticated = true;
         if (SparkPostHelper::getWebhookUsername()) {
-            $hasSuppliedCredentials = !(empty($_SERVER['PHP_AUTH_USER']) && empty($_SERVER['PHP_AUTH_PW']));
+            $requestUser = $req->getHeader('php_auth_user');
+            $requestPassword = $req->getHeader('php_auth_pw');
+
+            $hasSuppliedCredentials = !($requestUser && $requestPassword);
             if ($hasSuppliedCredentials) {
                 $user = SparkPostHelper::getWebhookUsername();
                 $password = SparkPostHelper::getWebhookPassword();
-                $isAuthenticated = ($_SERVER['PHP_AUTH_USER'] == $user || $_SERVER['PHP_AUTH_PW'] == $password);
+                $isAuthenticated = ($requestUser == $user && $requestPassword == $password);
             } else {
                 $isAuthenticated = false;
             }
