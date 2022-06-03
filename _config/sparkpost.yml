@@ -28,6 +28,8 @@ LeKoala\SparkPost\SparkPostHelper:
     transactional: true
     inlineCss: false
   inline_styles: true
+  webhook_username: ''
+  webhook_password: ''
 LeKoala\SparkPost\SparkPostAdmin:
   cache_enabled: true
   show_webhook_tab: true

@@ -183,7 +183,17 @@ class SparkPostHelper
 
     public static function getEnvForceSender()
     {
-        return  Environment::getEnv('SPARKPOST_FORCE_SENDER');
+        return Environment::getEnv('SPARKPOST_FORCE_SENDER');
+    }
+
+    public static function getWebhookUsername()
+    {
+        return self::config()->webhook_username;
+    }
+
+    public static function getWebhookPassword()
+    {
+        return self::config()->webhook_password;
     }
 
     /**

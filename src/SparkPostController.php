@@ -226,6 +226,21 @@ class SparkPostController extends Controller
             return $response;
         }
 
+        $payload = json_decode($json, JSON_OBJECT_AS_ARRAY);
+
+        // Check credentials if defined
+        $isAuthenticated = true;
+        if (SparkPostHelper::getWebhookUsername()) {
+            $hasSuppliedCredentials = !(empty($_SERVER['PHP_AUTH_USER']) && empty($_SERVER['PHP_AUTH_PW']));
+            if ($hasSuppliedCredentials) {
+                $user = SparkPostHelper::getWebhookUsername();
+                $password = SparkPostHelper::getWebhookPassword();
+                $isAuthenticated = ($_SERVER['PHP_AUTH_USER'] == $user || $_SERVER['PHP_AUTH_PW'] == $password);
+            } else {
+                $isAuthenticated = false;
+            }
+        }
+
         $webhookLogDir = Environment::getEnv('SPARKPOST_WEBHOOK_LOG_DIR');
         if ($webhookLogDir) {
             $dir = rtrim(Director::baseFolder(), '/') . '/' . rtrim($webhookLogDir, '/');
@@ -236,7 +251,8 @@ class SparkPostController extends Controller
 
             if (is_dir($dir)) {
                 $payload['@headers'] = $req->getHeaders();
-                $prettyPayload = json_encode(json_decode($json), JSON_PRETTY_PRINT);
+                $payload['@isAuthenticated'] = $isAuthenticated;
+                $prettyPayload = json_encode($payload, JSON_PRETTY_PRINT);
                 $time = date('Ymd-His');
                 file_put_contents($dir . '/' . $time . '_' . $batchId . '.json', $prettyPayload);
             } else {
@@ -244,7 +260,9 @@ class SparkPostController extends Controller
             }
         }
 
-        $payload = json_decode($json, JSON_OBJECT_AS_ARRAY);
+        if (!$isAuthenticated) {
+            return $response;
+        }
 
         try {
             $this->processPayload($payload, $batchId);

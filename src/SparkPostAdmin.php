@@ -769,14 +769,19 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         $url = $this->WebhookUrl();
         $description = SiteConfig::current_site_config()->Title;
 
-        $defaultAdmin = Environment::getEnv('SS_DEFAULT_ADMIN_USERNAME');
-        $defaultPassword = Environment::getEnv('SS_DEFAULT_ADMIN_PASSWORD');
+        $webhookUser = Environment::getEnv('SS_DEFAULT_ADMIN_USERNAME');
+        $webhookPassword = Environment::getEnv('SS_DEFAULT_ADMIN_PASSWORD');
+
+        if (SparkPostHelper::getWebhookUsername()) {
+            $webhookUser = SparkPostHelper::getWebhookUsername();
+            $webhookPassword = SparkPostHelper::getWebhookPassword();
+        }
 
         try {
-            if ($defaultAdmin) {
-                $client->createSimpleWebhook($description, $url, null, true, ['username' => $defaultAdmin, 'password' => $defaultPassword]);
+            if ($webhookUser && $webhookPassword) {
+                $client->createSimpleWebhook($description, $url, null, true, ['username' => $webhookUser, 'password' => $webhookPassword]);
             } else {
-                $client->createSimpleWebhook($description, $url);
+                $client->createSimpleWebhook($description, $url); // This will add a default credentials that is sparkpost/sparkpost
             }
             $this->getCache()->clear();
         } catch (Exception $ex) {
