@@ -16,17 +16,17 @@
         }
     ],
     "require": {
-        "php": ">7.2",
-        "silverstripe/framework": "^4.9",
+        "php": "^7.4 || ^8.0",
+        "silverstripe/framework": "^4.11",
         "symbiote/silverstripe-gridfieldextensions": "^3.2",
-        "pelago/emogrifier": "^5.0",
+        "pelago/emogrifier": "^6.0",
         "composer/ca-bundle": "*"
     },
     "require-dev": {
         "silverstripe/recipe-plugin": "^1",
         "silverstripe/recipe-cms": "^4.4",
-        "sminnee/phpunit": "^5.7",
-        "squizlabs/php_codesniffer": "^3.0"
+        "phpunit/phpunit": "^9.5",
+        "squizlabs/php_codesniffer": "^3.5"
     },
     "extra": {
         "installer-name": "sparkpost",

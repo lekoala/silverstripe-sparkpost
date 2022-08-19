@@ -19,7 +19,7 @@ class SparkPostTest extends SapphireTest
 {
     protected $testMailer;
 
-    protected function setUp()
+    protected function setUp(): void
     {
         parent::setUp();
 
@@ -31,7 +31,7 @@ class SparkPostTest extends SapphireTest
         $mailer->setSwiftMailer($swiftMailer);
         Injector::inst()->registerService($mailer, Mailer::class);
     }
-    protected function tearDown()
+    protected function tearDown(): void
     {
         parent::tearDown();
 
@@ -64,6 +64,10 @@ class SparkPostTest extends SapphireTest
     public function testTLSVersion()
     {
         $ch = curl_init();
+        // This fixes ca cert issues if server is not configured properly
+        if (strlen(ini_get('curl.cainfo')) === 0) {
+            curl_setopt($ch, CURLOPT_CAINFO, \Composer\CaBundle\CaBundle::getBundledCaBundlePath());
+        }
         curl_setopt($ch, CURLOPT_URL, 'https://www.howsmyssl.com/a/check');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         $data = curl_exec($ch);
@@ -82,19 +86,14 @@ class SparkPostTest extends SapphireTest
             return $this->markTestIncomplete("No api key set for test");
         }
 
-        $test_to = Environment::getEnv('SPARKPOST_TEST_TO');
-        $test_from = Environment::getEnv('SPARKPOST_TEST_FROM');
-        if (!$test_from || !$test_to) {
-            $this->markTestIncomplete("You must define tests environement variable: SPARKPOST_TEST_TO, SPARKPOST_TEST_FROM");
-        }
-
         $inst = SparkPostHelper::registerTransport();
 
         $email = new Email();
-        $email->setTo($test_to);
+        $email->setTo("example@localhost");
         $email->setSubject('Test email');
         $email->setBody("Body of my email");
-        $email->setFrom($test_from);
+        $email->setFrom("sender@localhost");
+        $email->getSwiftMessage()->getHeaders()->addTextHeader('X-Sending-Disabled', true);
         $sent = $email->send();
 
         $this->assertTrue(!!$sent);
