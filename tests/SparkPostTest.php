@@ -93,7 +93,7 @@ class SparkPostTest extends SapphireTest
         $email->setSubject('Test email');
         $email->setBody("Body of my email");
         $email->setFrom("sender@localhost");
-        $email->getSwiftMessage()->getHeaders()->addTextHeader('X-Sending-Disabled', true);
+        $email->getSwiftMessage()->getHeaders()->addTextHeader('X-SendingDisabled', "true");
         $sent = $email->send();
 
         $this->assertTrue(!!$sent);
