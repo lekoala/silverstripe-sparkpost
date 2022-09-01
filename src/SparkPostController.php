@@ -308,7 +308,13 @@ class SparkPostController extends Controller
         $subaccount = SparkPostHelper::getClient()->getSubaccount();
 
         foreach ($payload as $r) {
-            $ev = $r['msys'];
+            $ev = $r['msys'] ?? null;
+
+            if ($ev === null) {
+                $logLevel = self::config()->log_level ? self::config()->log_level : 7;
+                $this->getLogger()->log("Invalid payload: " . substr(json_encode($r), 0, 100) . '...', $logLevel);
+                continue;
+            }
 
             // This is a test payload
             if (empty($ev)) {
