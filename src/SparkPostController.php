@@ -59,8 +59,6 @@ class SparkPostController extends Controller
             return 'You can only test in dev mode';
         }
 
-        $client = $this->getClient();
-
         $file = $this->getRequest()->getVar('file');
         if ($file) {
             $data = file_get_contents(Director::baseFolder() . '/' . rtrim($file, '/'));
@@ -68,6 +66,7 @@ class SparkPostController extends Controller
             $data = file_get_contents(dirname(__DIR__) . '/resources/sample.json');
         }
         $payload = json_decode($data, JSON_OBJECT_AS_ARRAY);
+        $payload['@headers'] = $req->getHeaders();
 
         $this->processPayload($payload, 'TEST');
 
@@ -232,28 +231,11 @@ class SparkPostController extends Controller
         $isAuthenticated = true;
         $authError = null;
         if (SparkPostHelper::getWebhookUsername()) {
-            $requestUser = $req->getHeader('php_auth_user');
-            $requestPassword = $req->getHeader('php_auth_pw');
-            if (!$requestUser) {
-                $requestUser = $_SERVER['PHP_AUTH_USER'];
-            }
-            if (!$requestPassword) {
-                $requestPassword = $_SERVER['PHP_AUTH_PW'];
-            }
-
-            $hasSuppliedCredentials = $requestUser && $requestPassword;
-            if ($hasSuppliedCredentials) {
-                $user = SparkPostHelper::getWebhookUsername();
-                $password = SparkPostHelper::getWebhookPassword();
-                $isAuthenticated = ($requestUser == $user && $requestPassword == $password);
-                if ($user != $requestUser) {
-                    $authError = "User $requestUser doesn't match";
-                } elseif ($password != $requestPassword) {
-                    $authError = "Password $requestPassword don't match";
-                }
-            } else {
+            try {
+                $this->authRequest($req);
+            } catch (Exception $e) {
                 $isAuthenticated = false;
-                $authError = "No credentials";
+                $authError = $e->getMessage();
             }
         }
 
@@ -266,10 +248,11 @@ class SparkPostController extends Controller
             }
 
             if (is_dir($dir)) {
-                $payload['@headers'] = $req->getHeaders();
-                $payload['@isAuthenticated'] = $isAuthenticated;
-                $payload['@authError'] = $authError;
-                $prettyPayload = json_encode($payload, JSON_PRETTY_PRINT);
+                $storedPayload = array_merge([], $payload);
+                $storedPayload['@headers'] = $req->getHeaders();
+                $storedPayload['@isAuthenticated'] = $isAuthenticated;
+                $storedPayload['@authError'] = $authError;
+                $prettyPayload = json_encode($storedPayload, JSON_PRETTY_PRINT);
                 $time = date('Ymd-His');
                 file_put_contents($dir . '/' . $time . '_' . $batchId . '.json', $prettyPayload);
             } else {
@@ -295,6 +278,35 @@ class SparkPostController extends Controller
         return $response;
     }
 
+    protected function authRequest(HTTPRequest $req)
+    {
+        $requestUser = $req->getHeader('php_auth_user');
+        $requestPassword = $req->getHeader('php_auth_pw');
+        if (!$requestUser) {
+            $requestUser = $_SERVER['PHP_AUTH_USER'];
+        }
+        if (!$requestPassword) {
+            $requestPassword = $_SERVER['PHP_AUTH_PW'];
+        }
+
+        $authError = null;
+        $hasSuppliedCredentials = $requestUser && $requestPassword;
+        if ($hasSuppliedCredentials) {
+            $user = SparkPostHelper::getWebhookUsername();
+            $password = SparkPostHelper::getWebhookPassword();
+            if ($user != $requestUser) {
+                $authError = "User $requestUser doesn't match";
+            } elseif ($password != $requestPassword) {
+                $authError = "Password $requestPassword don't match";
+            }
+        } else {
+            $authError = "No credentials";
+        }
+        if ($authError) {
+            throw new Exception($authError);
+        }
+    }
+
     /**
      * Process data
      *
@@ -307,21 +319,25 @@ class SparkPostController extends Controller
 
         $subaccount = SparkPostHelper::getClient()->getSubaccount();
 
-        foreach ($payload as $r) {
+        foreach ($payload as $idx => $r) {
             // This is a test payload
-            if (empty($r) || empty($r['msys'])) {
+            if (empty($r)) {
+                continue;
+            }
+            // This is a custom entry
+            if (!is_numeric($idx)) {
                 continue;
             }
 
             $ev = $r['msys'] ?? null;
 
-            // Invalid payload
+            // Invalid payload: it should always be an object with a msys key containing the event
             if ($ev === null) {
-                $logLevel = self::config()->log_level ? self::config()->log_level : 7;
-                $this->getLogger()->log("Invalid payload: " . substr(json_encode($r), 0, 100) . '...', $logLevel);
+                $this->getLogger()->warn("Invalid payload: " . substr(json_encode($r), 0, 100) . '...');
                 continue;
             }
 
+            // Check type: it should be an object with the type as key
             $type = key($ev);
             if (!isset($ev[$type])) {
                 $this->getLogger()->warn("Invalid type $type in SparkPost payload");
