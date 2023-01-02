@@ -175,9 +175,9 @@ Make sure you have properly configured your [SPF](https://tools.sparkpost.com/sp
 
     mydomain.com   TXT   "v=spf1 include:myauthorizeddomain.com include:sparkpostmail.com ~all”
 
-Create a [DMARC record](https://www.unlocktheinbox.com/dmarcwizard/)
+Create a [DMARC record](https://www.zerobounce.net/services/dmarc-generator.html). See [why this is important](https://support.google.com/a/answer/2466563?hl=en).
 
-    _dmarc.mydomain.com. 3600 IN TXT "v=DMARC1; p=none; sp=none; rf=afrf; pct=100; ri=86400"
+    _dmarc.mydomain.com. 3600 IN TXT "v=DMARC1; p=quarantine; sp=quarantine; rf=afrf; pct=100; ri=86400;"
 
 Leave provide_plain option to true or provide plain content for your emails
 
