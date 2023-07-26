@@ -20,7 +20,11 @@ class EmailUtils
      */
     public static function inline_styles($html, $css = '')
     {
-        $domDocument = CssInliner::fromHtml($html)->inlineCss($css)->getDomDocument();
+        if ($css) {
+            $domDocument = CssInliner::fromHtml($html)->inlineCss($css)->getDomDocument();
+        } else {
+            $domDocument = CssInliner::fromHtml($html)->getDomDocument();
+        }
 
         HtmlPruner::fromDomDocument($domDocument)->removeElementsWithDisplayNone();
         $html = CssToAttributeConverter::fromDomDocument($domDocument)
