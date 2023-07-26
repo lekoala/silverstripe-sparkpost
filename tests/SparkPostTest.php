@@ -2,13 +2,13 @@
 
 namespace LeKoala\SparkPost\Test;
 
-use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Core\Environment;
+use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Control\Email\Email;
 use LeKoala\SparkPost\SparkPostHelper;
 use SilverStripe\Control\Email\Mailer;
 use SilverStripe\Core\Injector\Injector;
-use SilverStripe\Control\Email\SwiftMailer;
+use Symfony\Component\Mailer\MailerInterface;
 
 /**
  * Test for SparkPost
@@ -23,19 +23,14 @@ class SparkPostTest extends SapphireTest
     {
         parent::setUp();
 
-        $this->testMailer = Injector::inst()->get(Mailer::class);
-
-        // Ensure we have the right mailer
-        $mailer = new SwiftMailer();
-        $swiftMailer = new \Swift_Mailer(new \Swift_MailTransport());
-        $mailer->setSwiftMailer($swiftMailer);
-        Injector::inst()->registerService($mailer, Mailer::class);
+        $this->testMailer = Injector::inst()->get(MailerInterface::class);
     }
+
     protected function tearDown(): void
     {
         parent::tearDown();
 
-        Injector::inst()->registerService($this->testMailer, Mailer::class);
+        Injector::inst()->registerService($this->testMailer, MailerInterface::class);
     }
 
     public function testSetup()
@@ -46,7 +41,9 @@ class SparkPostTest extends SapphireTest
 
         $inst = SparkPostHelper::registerTransport();
         $mailer = SparkPostHelper::getMailer();
-        $this->assertTrue($inst === $mailer);
+        $instClass = get_class($inst);
+        $instMailer = get_class($mailer);
+        $this->assertEquals($instClass, $instMailer);
     }
 
     public function testClient()
@@ -82,20 +79,34 @@ class SparkPostTest extends SapphireTest
 
     public function testSending()
     {
+        $test_to = Environment::getEnv('SPARKPOST_TEST_TO');
+        $test_from = Environment::getEnv('SPARKPOST_TEST_FROM');
+
         if (!SparkPostHelper::getApiKey()) {
             return $this->markTestIncomplete("No api key set for test");
         }
 
-        $inst = SparkPostHelper::registerTransport();
+        $mailer = SparkPostHelper::registerTransport();
 
         $email = new Email();
-        $email->setTo("example@localhost");
         $email->setSubject('Test email');
         $email->setBody("Body of my email");
-        $email->setFrom("sender@localhost");
-        $email->getSwiftMessage()->getHeaders()->addTextHeader('X-SendingDisabled', "true");
-        $sent = $email->send();
 
-        $this->assertTrue(!!$sent);
+        if (!$test_from || !$test_to) {
+            $test_to = "example@localhost";
+            $test_from =  "sender@localhost";
+            // don't try to send it for real
+            $email->getHeaders()->addTextHeader('X-SendingDisabled', "true");
+        }
+        $email->setTo($test_to);
+        $email->setFrom($test_from);
+
+        // This is async, therefore it does not return anything anymore
+        $email->send();
+
+        $transport = SparkPostHelper::getTransportFromMailer($mailer);
+        $result = $transport->getApiResult();
+
+        $this->assertEquals(1, $result['total_accepted_recipients']);
     }
 }

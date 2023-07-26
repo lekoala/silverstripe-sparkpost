@@ -1,6 +1,6 @@
 # SilverStripe SparkPost module
 
-[![Build Status](https://travis-ci.com/lekoala/silverstripe-sparkpost.svg?branch=master)](https://travis-ci.com/lekoala/silverstripe-sparkpost)
+![Build Status](https://github.com/lekoala/silverstripe-sparkpost/actions/workflows/ci.yml/badge.svg)
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/lekoala/silverstripe-sparkpost/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/lekoala/silverstripe-sparkpost/?branch=master)
 [![Code Coverage](https://scrutinizer-ci.com/g/lekoala/silverstripe-sparkpost/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/lekoala/silverstripe-sparkpost/?branch=master)
 [![Build Status](https://scrutinizer-ci.com/g/lekoala/silverstripe-sparkpost/badges/build.png?b=master)](https://scrutinizer-ci.com/g/lekoala/silverstripe-sparkpost/build-status/master)
@@ -59,7 +59,7 @@ By default in SilverStripe, emails without a from email will use the Email::admi
 This is not convenient for websites using a value taken from the SiteConfig, as resolved with
 `SparkPostHelper::resolveDefaultFromEmail`.
 
-The SparkPostSwiftTransport can automatically take care of that and replace any admin email
+The SparkPostApiTransport can automatically take care of that and replace any admin email
 with the set value using the following config flag:
 
 ```yaml
@@ -116,9 +116,9 @@ $email = new Email();
 $email->setSubject($sellerTitle . ' - Invoice - ' . $date);
 $email->setBody($body);
 // Through Mandrill compat layer
-$email->getSwiftMessage()->getHeaders()->addTextHeader('X-MC-Metadata', json_encode(['RecordID' => $this->ID]));
+$email->getHeaders()->addTextHeader('X-MC-Metadata', json_encode(['RecordID' => $this->ID]));
 // Or use M-SYS header
-$email->getSwiftMessage()->getHeaders()->addTextHeader('X-MSYS-API', json_encode(['metadata' => ['RecordID' => $this->ID]]));
+$email->getHeaders()->addTextHeader('X-MSYS-API', json_encode(['metadata' => ['RecordID' => $this->ID]]));
 ```
 
 ## Webhooks
@@ -198,26 +198,19 @@ LeKoala\SparkPost\SparkPostHelper:
     inlineCss: true
 ```
 
-## Swift Mailer 6
+# Migration from Swift Mailer
 
-Swift Mailer 6 introduced quite a lot of breaking changes, make sure you are not using any of those:
+SilverStripe 5 replaced swift mailer by symfony/mailer
 
--   added Swift_Transport::ping()
--   removed Swift_Mime_HeaderFactory, Swift_Mime_HeaderSet, Swift_Mime_Message, Swift_Mime_MimeEntity,
-    and Swift_Mime_ParameterizedHeader interfaces
--   removed Swift_MailTransport and Swift_Transport_MailTransport
--   removed Swift_Encoding
--   removed the Swift_Transport_MailInvoker interface and Swift_Transport_SimpleMailInvoker class
--   removed the Swift_SignedMessage class
--   removed newInstance() methods everywhere
--   methods operating on Date header now use DateTimeImmutable object instead of Unix timestamp;
-    Swift_Mime_Headers_DateHeader::getTimestamp()/setTimestamp() renamed to getDateTime()/setDateTime()
--   bumped minimum version to PHP 7.0
--   removed Swift_Validate and replaced by egulias/email-validator
+Make sure to read the docs
+https://docs.silverstripe.org/en/5/developer_guides/email/
+https://symfony.com/doc/current/mailer.html
 
 ## Compatibility
 
-Tested with SilverStripe 4.9+
+Tested with SilverStripe 5+
+
+For 4.9+ compatibility, use branch 3
 
 For 4.x compatibility, use branch 2
 

@@ -28,10 +28,8 @@ use SilverStripe\Security\Permission;
 use LeKoala\SparkPost\SparkPostHelper;
 use SilverStripe\Forms\CompositeField;
 use SilverStripe\SiteConfig\SiteConfig;
-use SilverStripe\Control\Email\SwiftMailer;
 use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Security\PermissionProvider;
-use LeKoala\SparkPost\SparkPostSwiftTransport;
 use SilverStripe\Security\DefaultAdminService;
 use SilverStripe\Forms\GridField\GridFieldConfig;
 use SilverStripe\Forms\GridField\GridFieldFooter;
@@ -112,11 +110,6 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         if (isset($_GET['refresh'])) {
             $this->getCache()->clear();
         }
-    }
-
-    public function index($request)
-    {
-        return parent::index($request);
     }
 
     public function settings($request)
@@ -565,7 +558,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
      */
     public function providePermissions()
     {
-        $title = _t("SparkPostAdmin.MENUTITLE", LeftAndMain::menu_title_for_class('SparkPost'));
+        $title = _t("SparkPostAdmin.MENUTITLE", LeftAndMain::menu_title('SparkPost'));
         return [
             "CMS_ACCESS_SparkPost" => [
                 'name' => _t('SparkPostAdmin.ACCESS', "Access to '{title}' section", ['title' => $title]),
@@ -637,12 +630,9 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     public function canView($member = null)
     {
         $mailer = SparkPostHelper::getMailer();
+        $transport = SparkPostHelper::getTransportFromMailer($mailer);
         // Another custom mailer has been set
-        if (!$mailer instanceof SwiftMailer) {
-            return false;
-        }
-        // Doesn't use the proper transport
-        if (!$mailer->getSwiftMailer()->getTransport() instanceof SparkPostSwiftTransport) {
+        if (!($transport instanceof SparkPostApiTransport)) {
             return false;
         }
         return Permission::check("CMS_ACCESS_SparkPost", 'any', $member);

@@ -9,7 +9,7 @@ use Pelago\Emogrifier\HtmlProcessor\CssToAttributeConverter;
 class EmailUtils
 {
     /**
-     * Inline styles using Pelago Emogrifier V5
+     * Inline styles using Pelago Emogrifier V6
      *
      * This is much better than the functionnality provided by SparkPost anyway
      *

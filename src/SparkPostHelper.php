@@ -3,18 +3,17 @@
 namespace LeKoala\SparkPost;
 
 use Exception;
-use SilverStripe\Core\Environment;
+use ReflectionObject;
 use SilverStripe\Control\Director;
+use SilverStripe\Core\Environment;
+use SilverStripe\Core\Config\Config;
+use Symfony\Component\Mailer\Mailer;
 use SilverStripe\Control\Email\Email;
-use SilverStripe\Control\Email\Mailer;
 use SilverStripe\SiteConfig\SiteConfig;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Core\Config\Configurable;
-use SilverStripe\Control\Email\SwiftMailer;
 use LeKoala\SparkPost\Api\SparkPostApiClient;
-use LeKoala\SparkPost\SparkPostSwiftTransport;
-use SilverStripe\Core\Config\Config;
-use Swift_Mailer;
+use Symfony\Component\Mailer\MailerInterface;
 
 /**
  * This configurable class helps decoupling the api client from SilverStripe
@@ -37,11 +36,23 @@ class SparkPostHelper
     /**
      * Get the mailer instance
      *
-     * @return SilverStripe\Control\Email\SwiftMailer
+     * @return MailerInterface
      */
     public static function getMailer()
     {
-        return Injector::inst()->get(Mailer::class);
+        return Injector::inst()->get(MailerInterface::class);
+    }
+
+    /**
+     * @param MailerInterface $mailer
+     * @return AbstractTransport|SparkpostApiTransport
+     */
+    public static function getTransportFromMailer($mailer)
+    {
+        $r = new ReflectionObject($mailer);
+        $p = $r->getProperty('transport');
+        $p->setAccessible(true);
+        return $p->getValue($mailer);
     }
 
     /**
@@ -199,19 +210,16 @@ class SparkPostHelper
     /**
      * Register the transport with the client
      *
-     * @return SilverStripe\Control\Email\SwiftMailer The updated swift mailer
+     * @return SparkPostApiTransport The updated mailer
      * @throws Exception
      */
     public static function registerTransport()
     {
         $client = self::getClient();
         $mailer = self::getMailer();
-        if (!$mailer instanceof SwiftMailer) {
-            throw new Exception("Mailer must be an instance of " . SwiftMailer::class . " instead of " . get_class($mailer));
-        }
-        $transport = new SparkPostSwiftTransport($client);
-        $newSwiftMailer = new Swift_Mailer($transport);
-        $mailer->setSwiftMailer($newSwiftMailer);
+        $transport = new SparkPostApiTransport($client);
+        $mailer = new Mailer($transport);
+        Injector::inst()->registerService($mailer, MailerInterface::class);
         return $mailer;
     }
 
@@ -404,5 +412,31 @@ class SparkPostHelper
         $dom = str_replace('www.', '', $host);
 
         return 'postmaster@' . $dom;
+    }
+
+    /**
+     * Is logging enabled?
+     *
+     * @return bool
+     */
+    public static function getLoggingEnabled()
+    {
+        if (self::config()->get('enable_logging')) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Is sending enabled?
+     *
+     * @return bool
+     */
+    public static function getSendingEnabled()
+    {
+        if (self::config()->get('disable_sending')) {
+            return false;
+        }
+        return true;
     }
 }

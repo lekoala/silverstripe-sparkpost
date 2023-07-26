@@ -3,9 +3,6 @@ Name: sparkpost
 After:
   - 'emailconfig'
 ---
-# Do not automatically inject the transport if no key is set
-#SilverStripe\Core\Injector\Injector:
-#  Swift_Transport: LeKoala\SparkPost\SparkPostSwiftTransport
 SilverStripe\Control\Director:
   rules:
     '__sparkpost//$Action/$ID/$Name': 'LeKoala\SparkPost\SparkPostController'
