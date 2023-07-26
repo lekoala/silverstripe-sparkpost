@@ -27,7 +27,7 @@ class SparkPostTest extends SapphireTest
         // add dummy api key
         if (!SparkPostHelper::getAPIKey()) {
             $this->isDummy = true;
-            Environment::setEnv('SPARKPOST_API_KEY', 'dummy');
+            SparkPostHelper::config()->api_key = "dummy";
         }
 
         $this->testMailer = Injector::inst()->get(MailerInterface::class);
