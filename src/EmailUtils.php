@@ -88,4 +88,15 @@ class EmailUtils
         }
         return $matches[1];
     }
+
+    /**
+     * Useful when dealing with legacy code
+     *
+     * @param \SilverStripe\Control\Email\Email $Email
+     * @return \Symfony\Component\Mime\Header\Headers|Swift_Mime_SimpleHeaderSet
+     */
+    public static function getHeaders($Email)
+    {
+        return method_exists($Email, 'getSwiftMessage') ? $Email->getSwiftMessage()->getHeaders() : $Email->getHeaders();
+    }
 }

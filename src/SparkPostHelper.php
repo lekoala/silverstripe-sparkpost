@@ -44,17 +44,6 @@ class SparkPostHelper
     }
 
     /**
-     * Useful when dealing with legacy code
-     *
-     * @param Email $Email
-     * @return \Symfony\Component\Mime\Header\Headers|Swift_Mime_SimpleHeaderSet
-     */
-    public static function getHeaders($Email)
-    {
-        return method_exists($Email, 'getSwiftMessage') ? $Email->getSwiftMessage()->getHeaders() : $Email->getHeaders();
-    }
-
-    /**
      * @param MailerInterface $mailer
      * @return AbstractTransport|SparkpostApiTransport
      */
