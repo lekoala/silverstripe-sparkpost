@@ -2,7 +2,7 @@
 
 namespace LeKoala\SparkPost;
 
-use \Exception;
+use Exception;
 use SilverStripe\Forms\Tab;
 use SilverStripe\Forms\Form;
 use SilverStripe\Forms\TabSet;
@@ -150,7 +150,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
 
     /**
      * @param HTTPRequest $request
-     * @return HTTPResponse|null
+     * @return HTTPResponse|string
      */
     public function send_test($request)
     {
@@ -168,8 +168,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         $email->setTo($to);
 
         $email->send();
-        var_dump('Email sent!');
-        return null;
+        return 'Email sent';
     }
 
     /**
@@ -191,8 +190,6 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         if (!$id) {
             $id = $this->currentPageID();
         }
-
-        $form = parent::getEditForm($id);
 
         /** @var DataObject|null $record */
         $record = $this->getRecord($id);
@@ -283,9 +280,10 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             $toolsHtml = '<h2>Tools</h2>';
 
             // Show default from email
-            $defaultEmail =  SparkPostHelper::resolveDefaultFromEmail();
-            $toolsHtml .= "<p>Default sending email: " . $defaultEmail . " (" . SparkPostHelper::resolveDefaultFromEmailType() . ")</p>";
-            if (!SparkPostHelper::isEmailDomainReady($defaultEmail)) {
+            $defaultEmail = SparkPostHelper::resolveDefaultFromEmail();
+            $defaultEmailDisplayed = EmailUtils::stringify($defaultEmail);
+            $toolsHtml .= "<p>Default sending email: " . $defaultEmailDisplayed . " (" . SparkPostHelper::resolveDefaultFromEmailType() . ")</p>";
+            if (!SparkPostHelper::isEmailDomainReady($defaultEmailDisplayed)) {
                 $toolsHtml .= '<p style="color:red">The default email is not ready to send emails</p>';
             }
 
@@ -326,9 +324,6 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         } elseif ($actionParam == 'messages') {
             $messagesTab->addExtraClass('ui-state-active');
         }
-
-        $actions = new FieldList();
-
 
         // Build replacement form
         $form = Form::create(
@@ -396,8 +391,9 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     protected function getCachedData($method, $params, $expireInSeconds = 60)
     {
         $enabled = $this->getCacheEnabled();
+        $cacheResult = false;
+        $cache = $this->getCache();
         if ($enabled) {
-            $cache = $this->getCache();
             $key = md5(serialize($params));
             $cacheResult = $cache->get($key);
         }
@@ -572,7 +568,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         $params = $this->getParams();
 
         $messages = $this->getCachedData('searchEvents', $params, 60 * self::MESSAGE_CACHE_MINUTES);
-        if ($messages === false) {
+        if ($messages === false || !$messages) {
             if ($this->lastException) {
                 return $this->lastException->getMessage();
             }
@@ -592,19 +588,17 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         }
 
         $list = new ArrayList();
-        if ($messages) {
-            foreach ($messages as $message) {
-                // If we have a transmission id but no subject, try to find the transmission details
-                if (isset($message['transmission_id']) && empty($message['subject']) && isset($transmissions[$message['transmission_id']])) {
-                    $message = array_merge($transmissions[$message['transmission_id']], $message);
-                }
-                // In some case (errors, etc) we don't have a friendly from
-                if (empty($message['friendly_from']) && isset($message['msg_from'])) {
-                    $message['friendly_from'] = $message['msg_from'];
-                }
-                $m = new ArrayData($message);
-                $list->push($m);
+        foreach ($messages as $message) {
+            // If we have a transmission id but no subject, try to find the transmission details
+            if (isset($message['transmission_id']) && empty($message['subject']) && isset($transmissions[$message['transmission_id']])) {
+                $message = array_merge($transmissions[$message['transmission_id']], $message);
             }
+            // In some case (errors, etc) we don't have a friendly from
+            if (empty($message['friendly_from']) && isset($message['msg_from'])) {
+                $message['friendly_from'] = $message['msg_from'];
+            }
+            $m = new ArrayData($message);
+            $list->push($m);
         }
 
         return $list;
@@ -787,7 +781,11 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             }
         }
         $protocol = Director::protocol();
-        return $protocol . $this->getDomain() . '/sparkpost/incoming';
+        $domain = $this->getDomain();
+        if (!$domain) {
+            throw new Exception("No domain for webhook");
+        }
+        return $protocol . $domain . '/sparkpost/incoming';
     }
 
     /**
@@ -939,7 +937,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         $client = SparkPostHelper::getClient();
 
         $host = $this->getDomain();
-        if (!$host && is_bool($host)) {
+        if (!$host || is_bool($host)) {
             return false;
         }
 
@@ -1044,8 +1042,9 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     public function getDomainFromEmail()
     {
         $email = SparkPostHelper::resolveDefaultFromEmail(null, false);
-        if ($email) {
-            $domain = substr((string)strrchr($email, "@"), 1);
+        if ($email && is_string($email)) {
+            $emailat = (string)strrchr($email, "@");
+            $domain = substr($emailat, 1);
             if (!$domain) {
                 return false;
             }

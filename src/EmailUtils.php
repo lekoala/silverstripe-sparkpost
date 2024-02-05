@@ -30,6 +30,30 @@ class EmailUtils
     }
 
     /**
+     * @param array<string|int,string|null>|string|null|bool $email
+     * @return string|null
+     */
+    public static function stringify($email)
+    {
+        if (!$email || is_bool($email)) {
+            return null;
+        }
+        if (is_array($email)) {
+            return $email[1] . ' <' . $email[0] . '>';
+        }
+        return $email;
+    }
+
+    /**
+     * @param array<string|int,string|null>|string|null|bool $email
+     * @return bool
+     */
+    public static function validate($email)
+    {
+        return boolval(filter_var(self::stringify($email), FILTER_VALIDATE_EMAIL));
+    }
+
+    /**
      * Convert an html email to a text email while keeping formatting and links
      *
      * @param string $content
