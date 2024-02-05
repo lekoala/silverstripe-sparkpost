@@ -8,6 +8,7 @@ use SilverStripe\Forms\Form;
 use SilverStripe\Forms\TabSet;
 use SilverStripe\ORM\ArrayLib;
 use SilverStripe\ORM\ArrayList;
+use SilverStripe\ORM\DataObject;
 use SilverStripe\View\ArrayData;
 use SilverStripe\Control\Session;
 use SilverStripe\Forms\DateField;
@@ -23,9 +24,11 @@ use SilverStripe\Security\Security;
 use SilverStripe\View\ViewableData;
 use SilverStripe\Forms\LiteralField;
 use SilverStripe\Control\Email\Email;
+use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Forms\DropdownField;
 use SilverStripe\Security\Permission;
 use LeKoala\SparkPost\SparkPostHelper;
+use SilverStripe\Control\HTTPResponse;
 use SilverStripe\Forms\CompositeField;
 use SilverStripe\SiteConfig\SiteConfig;
 use SilverStripe\Forms\GridField\GridField;
@@ -46,15 +49,33 @@ use SilverStripe\Forms\GridField\GridFieldSortableHeader;
  */
 class SparkPostAdmin extends LeftAndMain implements PermissionProvider
 {
-
     const MESSAGE_CACHE_MINUTES = 5;
     const WEBHOOK_CACHE_MINUTES = 1440; // 1 day
     const SENDINGDOMAIN_CACHE_MINUTES = 1440; // 1 day
 
+    /**
+     * @var string
+     */
     private static $menu_title = "SparkPost";
+
+    /**
+     * @var string
+     */
     private static $url_segment = "sparkpost";
+
+    /**
+     * @var string
+     */
     private static $menu_icon = "sparkpost/images/sparkpost-icon.png";
+
+    /**
+     * @var string
+     */
     private static $url_rule = '/$Action/$ID/$OtherID';
+
+    /**
+     * @var array<string>
+     */
     private static $allowed_actions = [
         'settings',
         'SearchForm',
@@ -66,6 +87,9 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         "send_test",
     ];
 
+    /**
+     * @var boolean
+     */
     private static $cache_enabled = true;
 
     /**
@@ -74,19 +98,19 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     protected $subaccountKey = false;
 
     /**
-     * @var Exception
+     * @var Exception|null
      */
-    protected $lastException;
+    protected $lastException = null;
 
     /**
-     * @var ViewableData
+     * @var ViewableData|null
      */
-    protected $currentMessage;
+    protected $currentMessage = null;
 
     /**
      * Inject public dependencies into the controller
      *
-     * @var array
+     * @var array<string,string>
      */
     private static $dependencies = [
         'logger' => '%$Psr\Log\LoggerInterface',
@@ -94,15 +118,18 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     ];
 
     /**
-     * @var Psr\Log\LoggerInterface
+     * @var \Psr\Log\LoggerInterface
      */
     public $logger;
 
     /**
-     * @var Psr\SimpleCache\CacheInterface
+     * @var \Psr\SimpleCache\CacheInterface
      */
     public $cache;
 
+    /**
+     * @return void
+     */
     public function init()
     {
         parent::init();
@@ -112,11 +139,19 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         }
     }
 
+    /**
+     * @param HTTPRequest $request
+     * @return HTTPResponse
+     */
     public function settings($request)
     {
         return parent::index($request);
     }
 
+    /**
+     * @param HTTPRequest $request
+     * @return HTTPResponse|null
+     */
     public function send_test($request)
     {
         if (!$this->CanConfigureApi()) {
@@ -132,8 +167,9 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         $email->setBody("Test " . date('Y-m-d H:i:s'));
         $email->setTo($to);
 
-        $result = $email->send();
-        var_dump($result);
+        $email->send();
+        var_dump('Email sent!');
+        return null;
     }
 
     /**
@@ -146,7 +182,9 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
 
     /**
      * Returns a GridField of messages
-     * @return CMSForm
+     * @param mixed $id
+     * @param mixed $fields
+     * @return null|Form
      */
     public function getEditForm($id = null, $fields = null)
     {
@@ -156,6 +194,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
 
         $form = parent::getEditForm($id);
 
+        /** @var DataObject|null $record */
         $record = $this->getRecord($id);
 
         // Check if this record is viewable
@@ -208,7 +247,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             }
 
             if ($validator) {
-                /** @var GridFieldDetailForm $detailForm  */
+                /** @var GridFieldDetailForm|null $detailForm  */
                 $detailForm = $messageListConfig->getComponentByType(GridFieldDetailForm::class);
                 if ($detailForm) {
                     $detailForm->setValidator($validator);
@@ -223,16 +262,15 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             $this->SearchFields(),
             $messagesList,
             // necessary for tree node selection in LeftAndMain.EditForm.js
-            new HiddenField('ID', false, 0)
+            new HiddenField('ID', null, 0)
         );
 
         $fields = new FieldList([
             $root = new TabSet('Root', $messagesTab)
         ]);
 
+        $settingsTab = new Tab('Settings', _t('SparkPostAdmin.Settings', 'Settings'));
         if ($this->CanConfigureApi()) {
-            $settingsTab = new Tab('Settings', _t('SparkPostAdmin.Settings', 'Settings'));
-
             $domainTabData = $this->DomainTab();
             $settingsTab->push($domainTabData);
 
@@ -312,7 +350,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     /**
      * Get logger
      *
-     * @return  Psr\Log\LoggerInterface
+     * @return \Psr\Log\LoggerInterface
      */
     public function getLogger()
     {
@@ -322,7 +360,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     /**
      * Get the cache
      *
-     * @return Psr\SimpleCache\CacheInterface
+     * @return \Psr\SimpleCache\CacheInterface
      */
     public function getCache()
     {
@@ -351,9 +389,9 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
      * A simple cache helper
      *
      * @param string $method
-     * @param array $params
+     * @param array<mixed>|null|string|bool $params
      * @param int $expireInSeconds
-     * @return array
+     * @return array<mixed>|false
      */
     protected function getCachedData($method, $params, $expireInSeconds = 60)
     {
@@ -384,6 +422,9 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         return $data;
     }
 
+    /**
+     * @return array<mixed>
+     */
     public function getParams()
     {
         $params = $this->config()->default_search_params;
@@ -399,9 +440,11 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
 
         // Respect api formats
         if (!empty($params['to'])) {
+            //@phpstan-ignore-next-line
             $params['to'] = date('Y-m-d', strtotime(str_replace('/', '-', $params['to']))) . 'T00:00';
         }
         if (!empty($params['from'])) {
+            //@phpstan-ignore-next-line
             $params['from'] = date('Y-m-d', strtotime(str_replace('/', '-', $params['from']))) . 'T23:59';
         }
 
@@ -410,6 +453,11 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         return $params;
     }
 
+    /**
+     * @param string $name
+     * @param mixed $default
+     * @return mixed
+     */
     public function getParam($name, $default = null)
     {
         $data = $this->getSession()->get(__class__ . '.Search');
@@ -419,6 +467,9 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         return (isset($data[$name]) && strlen($data[$name])) ? $data[$name] : $default;
     }
 
+    /**
+     * @return CompositeField
+     */
     public function SearchFields()
     {
         $disabled_filters = $this->config()->disabled_search_filters;
@@ -467,6 +518,9 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         return $fields;
     }
 
+    /**
+     * @return Form
+     */
     public function SearchForm()
     {
         $SearchForm = new Form($this, 'SearchForm', new FieldList(), new FieldList([
@@ -476,6 +530,11 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         return $SearchForm;
     }
 
+    /**
+     * @param array<mixed> $data
+     * @param Form $form
+     * @return HTTPResponse
+     */
     public function doSearch($data, Form $form)
     {
         $post = $this->getRequest()->postVar('params');
@@ -554,7 +613,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     /**
      * Provides custom permissions to the Security section
      *
-     * @return array
+     * @return array<string,mixed>
      */
     public function providePermissions()
     {
@@ -619,7 +678,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
      */
     public function IsAdmin()
     {
-        return Permission::check("ADMIN");
+        return boolval(Permission::check("ADMIN"));
     }
 
     /**
@@ -635,11 +694,10 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         if (!($transport instanceof SparkPostApiTransport)) {
             return false;
         }
-        return Permission::check("CMS_ACCESS_SparkPost", 'any', $member);
+        return boolval(Permission::check("CMS_ACCESS_SparkPost", 'any', $member));
     }
 
     /**
-     *
      * @return bool
      */
     public function CanConfigureApi()
@@ -650,7 +708,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     /**
      * Check if webhook is installed
      *
-     * @return array|false
+     * @return array<mixed>|false
      */
     public function WebhookInstalled()
     {
@@ -689,7 +747,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
 
     /**
      * Hook details for template
-     * @return \ArrayData
+     * @return ArrayData|null
      */
     public function WebhookDetails()
     {
@@ -697,6 +755,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         if ($el) {
             return new ArrayData($el);
         }
+        return null;
     }
 
     /**
@@ -710,7 +769,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         if ($webhook) {
             return $this->UninstallHookForm($webhook);
         }
-        return $this->InstallHookForm($webhook);
+        return $this->InstallHookForm();
     }
 
     /**
@@ -722,7 +781,10 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             return rtrim(self::config()->webhook_base_url, '/') . '/sparkpost/incoming';
         }
         if (Director::isLive()) {
-            return Director::absoluteURL('/sparkpost/incoming');
+            $absurl = Director::absoluteURL('/sparkpost/incoming');
+            if ($absurl && is_string($absurl)) {
+                return $absurl;
+            }
         }
         $protocol = Director::protocol();
         return $protocol . $this->getDomain() . '/sparkpost/incoming';
@@ -731,10 +793,9 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     /**
      * Install hook form
      *
-     * @param array $data
      * @return FormField
      */
-    public function InstallHookForm($data)
+    public function InstallHookForm()
     {
         $fields = new CompositeField();
         $fields->push(new LiteralField('Info', $this->MessageHelper(
@@ -748,6 +809,9 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         return $fields;
     }
 
+    /**
+     * @return HTTPResponse
+     */
     public function doInstallHook()
     {
         if (!$this->CanConfigureApi()) {
@@ -784,7 +848,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     /**
      * Uninstall hook form
      *
-     * @param array $data
+     * @param array<mixed> $data
      * @return FormField
      */
     public function UninstallHookForm($data)
@@ -824,6 +888,11 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         return $fields;
     }
 
+    /**
+     * @param array<mixed> $data
+     * @param Form $form
+     * @return HTTPResponse
+     */
     public function doUninstallHook($data, Form $form)
     {
         if (!$this->CanConfigureApi()) {
@@ -848,7 +917,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     /**
      * Check if sending domain is installed
      *
-     * @return array
+     * @return array<mixed>|false
      */
     public function SendingDomainInstalled()
     {
@@ -863,16 +932,18 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     /**
      * Trigger request to check if sending domain is verified
      *
-     * @return array
+     * @return array<mixed>|false
      */
     public function VerifySendingDomain()
     {
         $client = SparkPostHelper::getClient();
 
         $host = $this->getDomain();
+        if (!$host && is_bool($host)) {
+            return false;
+        }
 
         $verification = $client->verifySendingDomain($host);
-
         if (empty($verification)) {
             return false;
         }
@@ -929,7 +1000,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     }
 
     /**
-     * @return string
+     * @return ?string
      */
     public function InboundUrl()
     {
@@ -938,7 +1009,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         if ($domain) {
             return $subdomain . '.' . $domain;
         }
-        return false;
+        return null;
     }
 
     /**
@@ -953,6 +1024,9 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             $base = Director::protocolAndHost();
         }
         $host = parse_url($base, PHP_URL_HOST);
+        if (!$host) {
+            return false;
+        }
         $hostParts = explode('.', $host);
         $parts = count($hostParts);
         if ($parts < 2) {
@@ -971,7 +1045,10 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     {
         $email = SparkPostHelper::resolveDefaultFromEmail(null, false);
         if ($email) {
-            $domain = substr(strrchr($email, "@"), 1);
+            $domain = substr((string)strrchr($email, "@"), 1);
+            if (!$domain) {
+                return false;
+            }
             return $domain;
         }
         return false;
@@ -994,8 +1071,8 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     /**
      * Install domain form
      *
-     * @param CompositeField $fieldsd
-     * @return FormField
+     * @param CompositeField $fields
+     * @return void
      */
     public function InstallDomainForm(CompositeField $fields)
     {
@@ -1011,6 +1088,9 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         )));
     }
 
+    /**
+     * @return HTTPResponse
+     */
     public function doInstallDomain()
     {
         if (!$this->CanConfigureApi()) {
@@ -1021,7 +1101,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
 
         $domain = $this->getDomain();
 
-        if (!$domain) {
+        if (!$domain || is_bool($domain)) {
             return $this->redirectBack();
         }
 
@@ -1038,8 +1118,8 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     /**
      * Uninstall domain form
      *
-     * @param CompositeField $fieldsd
-     * @return FormField
+     * @param CompositeField $fields
+     * @return void
      */
     public function UninstallDomainForm(CompositeField $fields)
     {
@@ -1065,6 +1145,11 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         )));
     }
 
+    /**
+     * @param array<mixed> $data
+     * @param Form $form
+     * @return HTTPResponse
+     */
     public function doUninstallDomain($data, Form $form)
     {
         if (!$this->CanConfigureApi()) {
@@ -1075,7 +1160,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
 
         $domain = $this->getDomain();
 
-        if (!$domain) {
+        if (!$domain || is_bool($domain)) {
             return $this->redirectBack();
         }
 

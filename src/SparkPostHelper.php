@@ -29,7 +29,7 @@ class SparkPostHelper
     /**
      * Client instance
      *
-     * @var SparkPostApiClient
+     * @var ?\LeKoala\SparkPost\Api\SparkPostApiClient
      */
     protected static $client;
 
@@ -45,7 +45,7 @@ class SparkPostHelper
 
     /**
      * @param MailerInterface $mailer
-     * @return AbstractTransport|SparkpostApiTransport
+     * @return \Symfony\Component\Mailer\Transport\AbstractTransport|SparkpostApiTransport
      */
     public static function getTransportFromMailer($mailer)
     {
@@ -77,6 +77,7 @@ class SparkPostHelper
             }
             self::$client = new SparkPostApiClient($key);
             if (Director::isDev()) {
+                //@phpstan-ignore-next-line
                 self::$client->setCurlOption(CURLOPT_VERBOSE, true);
             }
             if (Environment::getEnv("SPARKPOST_EU")) {
@@ -92,8 +93,7 @@ class SparkPostHelper
 
     /**
      * Get the api client instance
-     * @return LeKoala\SparkPost\Api\SparkPostApiClient
-     *
+     * @return \LeKoala\SparkPost\Api\SparkPostApiClient
      * @throws Exception
      */
     public static function getMasterClient()
@@ -162,46 +162,73 @@ class SparkPostHelper
         }
     }
 
+    /**
+     * @return mixed
+     */
     public static function getEnvApiKey()
     {
         return Environment::getEnv('SPARKPOST_API_KEY');
     }
 
+    /**
+     * @return mixed
+     */
     public static function getEnvMasterApiKey()
     {
         return Environment::getEnv('SPARKPOST_MASTER_API_KEY');
     }
 
+    /**
+     * @return mixed
+     */
     public static function getEnvSendingDisabled()
     {
         return Environment::getEnv('SPARKPOST_SENDING_DISABLED');
     }
 
+    /**
+     * @return mixed
+     */
     public static function getEnvEnableLogging()
     {
         return  Environment::getEnv('SPARKPOST_ENABLE_LOGGING');
     }
 
+    /**
+     * @return mixed
+     */
     public static function getEnvSubaccountId()
     {
         return  Environment::getEnv('SPARKPOST_SUBACCOUNT_ID');
     }
 
+    /**
+     * @return mixed
+     */
     public static function getSubaccountId()
     {
         return self::config()->subaccount_id;
     }
 
+    /**
+     * @return mixed
+     */
     public static function getEnvForceSender()
     {
         return Environment::getEnv('SPARKPOST_FORCE_SENDER');
     }
 
+    /**
+     * @return mixed
+     */
     public static function getWebhookUsername()
     {
         return self::config()->webhook_username;
     }
 
+    /**
+     * @return mixed
+     */
     public static function getWebhookPassword()
     {
         return self::config()->webhook_password;
@@ -210,7 +237,7 @@ class SparkPostHelper
     /**
      * Register the transport with the client
      *
-     * @return SparkPostApiTransport The updated mailer
+     * @return Mailer The updated mailer
      * @throws Exception
      */
     public static function registerTransport()
@@ -279,7 +306,7 @@ class SparkPostHelper
      *
      * @param string $from
      * @param bool $createDefault
-     * @return string
+     * @return string|array<string,string>|false
      */
     public static function resolveDefaultFromEmail($from = null, $createDefault = true)
     {
@@ -302,7 +329,7 @@ class SparkPostHelper
         }
         // Use admin email if set
         if ($adminEmail = Email::config()->admin_email) {
-            if (is_array($adminEmail) && count($adminEmail ?? []) > 0) {
+            if (is_array($adminEmail) && count($adminEmail) > 0) {
                 $email = array_keys($adminEmail)[0];
                 return [$email => $adminEmail[$email]];
             } elseif (is_string($adminEmail)) {
@@ -375,8 +402,8 @@ class SparkPostHelper
     /**
      * Resolve default send to address
      *
-     * @param string $to
-     * @return string
+     * @param string|array<mixed>|null $to
+     * @return string|array<mixed>|null
      */
     public static function resolveDefaultToEmail($to = null)
     {
@@ -399,7 +426,7 @@ class SparkPostHelper
         if ($admin = Email::config()->admin_email) {
             return $admin;
         }
-        return false;
+        return null;
     }
 
     /**

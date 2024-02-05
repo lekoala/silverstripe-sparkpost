@@ -54,7 +54,7 @@ class SparkPostApiClient
     /**
      * Your api key
      *
-     * @var string
+     * @var ?string
      */
     protected $key;
 
@@ -82,7 +82,7 @@ class SparkPostApiClient
     /**
      * Results from the api
      *
-     * @var array
+     * @var array<mixed>
      */
     protected $results = [];
 
@@ -96,7 +96,7 @@ class SparkPostApiClient
     /**
      * Client options
      *
-     * @var array
+     * @var array<mixed>
      */
     protected $curlOpts = [];
 
@@ -105,17 +105,20 @@ class SparkPostApiClient
      *
      * @param string $key Specify the string, or it will read env SPARKPOST_API_KEY or constant SPARKPOST_API_KEY
      * @param int $subaccount Specify a subaccount to limit data sent by the API
-     * @param array $curlOpts Additionnal options to configure the curl client
+     * @param array<mixed> $curlOpts Additionnal options to configure the curl client
      */
     public function __construct($key = null, $subaccount = null, $curlOpts = [])
     {
         if ($key) {
             $this->key = $key;
         } else {
-            $this->key = getenv('SPARKPOST_API_KEY');
+            $envkey = getenv('SPARKPOST_API_KEY');
+            if ($envkey) {
+                $this->key = $envkey;
+            }
         }
         if (getenv('SPARKPOST_EU')) {
-            $this->euEndpoint = getenv('SPARKPOST_EU');
+            $this->euEndpoint = boolval(getenv('SPARKPOST_EU'));
         } elseif (defined('SPARKPOST_EU')) {
             $this->euEndpoint = true;
         }
@@ -126,7 +129,7 @@ class SparkPostApiClient
     /**
      * Get default options
      *
-     * @return array
+     * @return array<mixed>
      */
     public function getDefaultCurlOptions()
     {
@@ -156,7 +159,8 @@ class SparkPostApiClient
      * Set an option
      *
      * @param string $name
-     * @return mixed
+     * @param mixed $value
+     * @return void
      */
     public function setCurlOption($name, $value)
     {
@@ -177,6 +181,7 @@ class SparkPostApiClient
      * Set the current api key
      *
      * @param string $key
+     * @return void
      */
     public function setKey($key)
     {
@@ -186,7 +191,7 @@ class SparkPostApiClient
     /**
      * Get the use of eu endpoint
      *
-     * @return string
+     * @return bool
      */
     public function getEuEndpoint()
     {
@@ -196,7 +201,8 @@ class SparkPostApiClient
     /**
      * Set the use of eu endpoint
      *
-     * @param string $euEndpoint
+     * @param bool $euEndpoint
+     * @return void
      */
     public function setEuEndpoint($euEndpoint)
     {
@@ -216,7 +222,7 @@ class SparkPostApiClient
     /**
      * Get the logger
      *
-     * @return type
+     * @return callable
      */
     public function getLogger()
     {
@@ -227,6 +233,7 @@ class SparkPostApiClient
      * Set a logging method
      *
      * @param callable $logger
+     * @return void
      */
     public function setLogger(callable $logger)
     {
@@ -247,6 +254,7 @@ class SparkPostApiClient
      * Set subaccount id
      *
      * @param int $subaccount
+     * @return void
      */
     public function setSubaccount($subaccount)
     {
@@ -256,7 +264,7 @@ class SparkPostApiClient
     /**
      * Helper that handles dot notation
      *
-     * @param array $arr
+     * @param array<mixed> $arr
      * @param string $path
      * @param string $val
      * @return mixed
@@ -273,9 +281,9 @@ class SparkPostApiClient
     /**
      * Map data using a given mapping array
      *
-     * @param array $data
-     * @param array $map
-     * @return array
+     * @param array<mixed> $data
+     * @param array<mixed> $map
+     * @return array<mixed>
      */
     protected function mapData($data, $map)
     {
@@ -318,8 +326,8 @@ class SparkPostApiClient
      * 'inlineCss'
      *
      * @link https://developers.sparkpost.com/api/transmissions.html
-     * @param array $data
-     * @return array An array containing 3 keys: total_rejected_recipients, total_accepted_recipients, id
+     * @param array<mixed> $data
+     * @return array<mixed> An array containing 3 keys: total_rejected_recipients, total_accepted_recipients, id
      */
     public function createTransmission($data)
     {
@@ -359,7 +367,7 @@ class SparkPostApiClient
      * Get the detail of a transmission
      *
      * @param string $id
-     * @return array
+     * @return array<mixed>
      */
     public function getTransmission($id)
     {
@@ -370,7 +378,7 @@ class SparkPostApiClient
      * Delete a transmission
      *
      * @param string $id
-     * @return array
+     * @return array<mixed>
      */
     public function deleteTransmission($id)
     {
@@ -382,7 +390,7 @@ class SparkPostApiClient
      *
      * @param string $campaignId
      * @param string $templateId
-     * @return array
+     * @return array<mixed>
      */
     public function listTransmissions($campaignId = null, $templateId = null)
     {
@@ -446,8 +454,8 @@ class SparkPostApiClient
      * [timestamp] =>  2050-01-01T11:57:36.000Z
      *
      * @deprecated
-     * @param array $params
-     * @return array
+     * @param array<mixed> $params
+     * @return array<mixed>
      */
     public function searchMessageEvents($params = [])
     {
@@ -524,8 +532,8 @@ class SparkPostApiClient
      * "transactional" => "1"
      * "msg_size" => "48613"
      *
-     * @param array $params
-     * @return array
+     * @param array<mixed> $params
+     * @return array<mixed>
      */
     public function searchEvents($params = [])
     {
@@ -557,8 +565,8 @@ class SparkPostApiClient
      * ]
      * }
      *
-     * @param string $params
-     * @return array
+     * @param array<mixed> $params
+     * @return array<mixed>
      */
     public function createWebhook($params = [])
     {
@@ -570,10 +578,10 @@ class SparkPostApiClient
      *
      * @param string $name
      * @param string $target
-     * @param array $events
+     * @param array<mixed> $events
      * @param bool $auth Should we use basic auth ?
-     * @param array $credentials An array containing "username" and "password"
-     * @return type
+     * @param array<mixed> $credentials An array containing "username" and "password"
+     * @return array<mixed>
      */
     public function createSimpleWebhook($name, $target, array $events = null, $auth = false, $credentials = null)
     {
@@ -603,7 +611,7 @@ class SparkPostApiClient
      * List all webhooks
      *
      * @param string $timezone
-     * @return array
+     * @return array<mixed>
      */
     public function listAllWebhooks($timezone = null)
     {
@@ -618,7 +626,7 @@ class SparkPostApiClient
      * Get a webhook
      *
      * @param string $id
-     * @return array
+     * @return array<mixed>
      */
     public function getWebhook($id)
     {
@@ -629,8 +637,8 @@ class SparkPostApiClient
      * Update a webhook
      *
      * @param string $id
-     * @param array $params
-     * @return array
+     * @param array<mixed> $params
+     * @return array<mixed>
      */
     public function updateWebhook($id, $params = [])
     {
@@ -641,7 +649,7 @@ class SparkPostApiClient
      * Delete a webhook
      *
      * @param string $id
-     * @return array
+     * @return array<mixed>
      */
     public function deleteWebhook($id)
     {
@@ -652,7 +660,7 @@ class SparkPostApiClient
      * Validate a webhook
      *
      * @param string $id
-     * @return array
+     * @return array<mixed>
      */
     public function validateWebhook($id)
     {
@@ -667,7 +675,7 @@ class SparkPostApiClient
      *
      * @param string $id
      * @param int $limit
-     * @return array
+     * @return array<mixed>
      */
     public function webhookBatchStatus($id, $limit = 1000)
     {
@@ -678,7 +686,7 @@ class SparkPostApiClient
      * List an example of the event data that will be posted by a Webhook for the specified events.
      *
      * @param string $events bounce, delivery...
-     * @return array
+     * @return array<mixed>
      */
     public function getSampleEvents($events = null)
     {
@@ -692,8 +700,8 @@ class SparkPostApiClient
     /**
      * Create a sending domain
      *
-     * @param string $params
-     * @return array
+     * @param array<mixed> $params
+     * @return array<mixed>
      */
     public function createSendingDomain($params = [])
     {
@@ -704,7 +712,7 @@ class SparkPostApiClient
      * A simpler call to the api
      *
      * @param string $name
-     * @return array
+     * @return array<mixed>
      */
     public function createSimpleSendingDomain($name)
     {
@@ -717,7 +725,7 @@ class SparkPostApiClient
     /**
      * List all sending domains
      *
-     * @return array
+     * @return array<mixed>
      */
     public function listAllSendingDomains()
     {
@@ -728,7 +736,7 @@ class SparkPostApiClient
      * Get a sending domain
      *
      * @param string $id
-     * @return array
+     * @return array<mixed>
      */
     public function getSendingDomain($id)
     {
@@ -739,7 +747,7 @@ class SparkPostApiClient
      * Verify a sending domain - This will ask SparkPost to check if SPF and DKIM are valid
      *
      * @param string $id
-     * @return array
+     * @return array<mixed>
      */
     public function verifySendingDomain($id)
     {
@@ -753,8 +761,8 @@ class SparkPostApiClient
      * Update a sending domain
      *
      * @param string $id
-     * @param array $params
-     * @return array
+     * @param array<mixed> $params
+     * @return array<mixed>
      */
     public function updateSendingDomain($id, $params = [])
     {
@@ -765,7 +773,7 @@ class SparkPostApiClient
      * Delete a sending domain
      *
      * @param string $id
-     * @return array
+     * @return array<mixed>
      */
     public function deleteSendingDomain($id)
     {
@@ -776,7 +784,7 @@ class SparkPostApiClient
      * Create an inbound domain
      *
      * @param string $domain
-     * @return array
+     * @return array<mixed>
      */
     public function createInboundDomain($domain)
     {
@@ -786,7 +794,7 @@ class SparkPostApiClient
     /**
      * List all inbound domains
      *
-     * @return array
+     * @return array<mixed>
      */
     public function listInboundDomains()
     {
@@ -797,7 +805,7 @@ class SparkPostApiClient
      * Get details of an inbound domain
      *
      * @param string $domain
-     * @return array
+     * @return array<mixed>
      */
     public function getInboundDomain($domain)
     {
@@ -808,7 +816,7 @@ class SparkPostApiClient
      * Delete an inbound domain
      *
      * @param string $domain
-     * @return array
+     * @return array<mixed>
      */
     public function deleteInboundDomain($domain)
     {
@@ -826,8 +834,8 @@ class SparkPostApiClient
      * "domain": "email.example.com"
      * }
      *
-     * @param array|string $params
-     * @return array
+     * @param array<mixed>|string $params
+     * @return array<mixed>
      */
     public function createRelayWebhook($params)
     {
@@ -837,7 +845,7 @@ class SparkPostApiClient
     /**
      * List all relay webhooks
      *
-     * @return array
+     * @return array<mixed>
      */
     public function listRelayWebhooks()
     {
@@ -848,7 +856,7 @@ class SparkPostApiClient
      * Get the details of a relay webhook
      *
      * @param int $id
-     * @return array
+     * @return array<mixed>
      */
     public function getRelayWebhook($id)
     {
@@ -859,8 +867,8 @@ class SparkPostApiClient
      * Update a relay webhook
      *
      * @param int $id
-     * @param array $params
-     * @return array
+     * @param array<mixed> $params
+     * @return array<mixed>
      */
     public function updateRelayWebhook($id, $params)
     {
@@ -871,7 +879,7 @@ class SparkPostApiClient
      * Delete a relay webhook
      *
      * @param int $id
-     * @return array
+     * @return array<mixed>
      */
     public function deleteRelayWebhook($id)
     {
@@ -881,7 +889,7 @@ class SparkPostApiClient
     /**
      * Create a valid date for the API
      *
-     * @param string $time
+     * @param string|int $time
      * @param string $format
      * @return string Datetime in format of YYYY-MM-DDTHH:MM
      */
@@ -890,10 +898,16 @@ class SparkPostApiClient
         if (!is_int($time)) {
             $time = strtotime($time);
         }
+        if (!$time) {
+            throw new Exception("Invalid time");
+        }
         if (!$format) {
             $dt = new DateTime('@' . $time);
         } else {
-            $dt = DateTime::createFromFormat($format, $time);
+            $dt = DateTime::createFromFormat((string)$format, (string)$time);
+        }
+        if (!$dt) {
+            throw new Exception("Invalid datetime");
         }
         return $dt->format(self::DATETIME_FORMAT);
     }
@@ -904,7 +918,7 @@ class SparkPostApiClient
      * @param string $email
      * @param string $name
      * @param string $header_to
-     * @return array
+     * @return array<mixed>
      */
     public function buildAddress($email, $name = null, $header_to = null)
     {
@@ -925,7 +939,7 @@ class SparkPostApiClient
      *
      * @param string $string
      * @param string $header_to
-     * @return array
+     * @return array<mixed>
      */
     public function buildAddressFromString($string, $header_to = null)
     {
@@ -937,11 +951,11 @@ class SparkPostApiClient
     /**
      * Build a recipient
      *
-     * @param string|array $address
-     * @param array $tags
-     * @param array $metadata
-     * @param array $substitution_data
-     * @return array
+     * @param string|array<mixed> $address
+     * @param array<mixed> $tags
+     * @param array<mixed> $metadata
+     * @param array<mixed> $substitution_data
+     * @return array<mixed>
      * @throws Exception
      */
     public function buildRecipient($address, array $tags = null, array $metadata = null, array $substitution_data = null)
@@ -973,8 +987,8 @@ class SparkPostApiClient
      *
      * @param string $endpoint
      * @param string $action
-     * @param array $data
-     * @return array
+     * @param array<mixed>|string $data
+     * @return array<mixed>
      * @throws Exception
      */
     protected function makeRequest($endpoint, $action = null, $data = null)
@@ -991,11 +1005,13 @@ class SparkPostApiClient
             $action = strtoupper($action);
         }
 
-        if ($action === self::METHOD_GET && !empty($data)) {
-            $endpoint .= '?' . http_build_query($data);
-        }
-        if ($action === self::METHOD_POST && is_array($data)) {
-            $data = json_encode($data);
+        if (is_array($data) && !empty($data)) {
+            if ($action === self::METHOD_GET) {
+                $endpoint .= '?' . http_build_query($data);
+            }
+            if ($action === self::METHOD_POST) {
+                $data = json_encode($data);
+            }
         }
 
         $header = [];
@@ -1020,12 +1036,18 @@ class SparkPostApiClient
         if ($this->getCurlOption('verbose')) {
             curl_setopt($ch, CURLOPT_VERBOSE, true);
             $verbose = fopen('php://temp', 'w+');
+            if ($verbose === false) {
+                throw new Exception("Failed to open stream");
+            }
             curl_setopt($ch, CURLOPT_STDERR, $verbose);
         }
 
         // This fixes ca cert issues if server is not configured properly
-        if (strlen(ini_get('curl.cainfo')) === 0) {
-            curl_setopt($ch, CURLOPT_CAINFO, \Composer\CaBundle\CaBundle::getBundledCaBundlePath());
+        $cainfo = ini_get('curl.cainfo');
+        if ($cainfo !== false) {
+            if (strlen($cainfo) === 0) {
+                curl_setopt($ch, CURLOPT_CAINFO, \Composer\CaBundle\CaBundle::getBundledCaBundlePath());
+            }
         }
 
         switch ($action) {
@@ -1042,6 +1064,9 @@ class SparkPostApiClient
 
         if (!$result) {
             throw new Exception('Error: "' . curl_error($ch) . '" - Code: ' . curl_errno($ch));
+        }
+        if (is_bool($result)) {
+            throw new Exception("CURLOPT_RETURNTRANSFER was not set");
         }
 
         if ($this->getCurlOption('verbose')) {
@@ -1073,15 +1098,18 @@ class SparkPostApiClient
                     // For invalid domains, append domain name to make error more useful
                     if ($item['code'] == 7001) {
                         $from = '';
-                        if (!is_array($data)) {
-                            $data = json_decode($data, JSON_OBJECT_AS_ARRAY);
+                        if (!is_array($data) && is_string($data)) {
+                            $data = json_decode($data, true);
                         }
                         if (isset($data['content']['from'])) {
                             $from = $data['content']['from'];
                         }
                         if ($from && is_string($from)) {
-                            $domain = substr(strrchr($from, "@"), 1);
-                            $message .= ' (' . $domain . ')';
+                            $fromat = strrchr($from, "@");
+                            if ($fromat) {
+                                $domain = substr($fromat, 1);
+                                $message .= ' (' . $domain . ')';
+                            }
                         }
                     }
 
@@ -1091,8 +1119,8 @@ class SparkPostApiClient
                             if (empty($data['recipients'])) {
                                 $message .= ' (empty recipients list)';
                             } else {
+                                $addresses = [];
                                 if (is_array($data['recipients'])) {
-                                    $addresses = [];
                                     foreach ($data['recipients'] as $recipient) {
                                         $addresses[] = json_encode($recipient['address']);
                                     }
@@ -1118,7 +1146,7 @@ class SparkPostApiClient
     /**
      * Get all results from the api
      *
-     * @return array
+     * @return array<mixed>
      */
     public function getResults()
     {
@@ -1128,7 +1156,7 @@ class SparkPostApiClient
     /**
      * Get last result
      *
-     * @return array
+     * @return array<mixed>
      */
     public function getLastResult()
     {

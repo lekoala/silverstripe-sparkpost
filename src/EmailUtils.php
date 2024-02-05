@@ -9,7 +9,7 @@ use Pelago\Emogrifier\HtmlProcessor\CssToAttributeConverter;
 class EmailUtils
 {
     /**
-     * Inline styles using Pelago Emogrifier V6
+     * Inline styles using Pelago Emogrifier V7
      *
      * This is much better than the functionnality provided by SparkPost anyway
      *
@@ -90,10 +90,9 @@ class EmailUtils
     }
 
     /**
-     * Useful when dealing with legacy code
-     *
+     * @deprecated
      * @param \SilverStripe\Control\Email\Email $Email
-     * @return \Symfony\Component\Mime\Header\Headers|Swift_Mime_SimpleHeaderSet
+     * @return \Symfony\Component\Mime\Header\Headers
      */
     public static function getHeaders($Email)
     {

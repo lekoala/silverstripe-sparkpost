@@ -9,6 +9,7 @@ use SilverStripe\Core\Environment;
 use SilverStripe\Control\Controller;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Security\Permission;
+use SilverStripe\Control\HTTPResponse;
 use LeKoala\SparkPost\Api\SparkPostApiClient;
 
 /**
@@ -18,8 +19,19 @@ use LeKoala\SparkPost\Api\SparkPostApiClient;
  */
 class SparkPostController extends Controller
 {
+    /**
+     * @var int
+     */
     protected $eventsCount = 0;
+
+    /**
+     * @var int
+     */
     protected $skipCount = 0;
+
+    /**
+     * @var array<string>
+     */
     private static $allowed_actions = [
         'incoming',
         'test',
@@ -29,17 +41,21 @@ class SparkPostController extends Controller
     /**
      * Inject public dependencies into the controller
      *
-     * @var array
+     * @var array<string,string>
      */
     private static $dependencies = [
         'logger' => '%$Psr\Log\LoggerInterface',
     ];
 
     /**
-     * @var Psr\Log\LoggerInterface
+     * @var \Psr\Log\LoggerInterface
      */
     public $logger;
 
+    /**
+     * @param HTTPRequest $req
+     * @return HTTPResponse|string
+     */
     public function index(HTTPRequest $req)
     {
         return $this->render([
@@ -52,6 +68,7 @@ class SparkPostController extends Controller
      * You can also see /resources/sample.json
      *
      * @param HTTPRequest $req
+     * @return string
      */
     public function test(HTTPRequest $req)
     {
@@ -65,7 +82,10 @@ class SparkPostController extends Controller
         } else {
             $data = file_get_contents(dirname(__DIR__) . '/resources/sample.json');
         }
-        $payload = json_decode($data, JSON_OBJECT_AS_ARRAY);
+        if (!$data) {
+            throw new Exception("Failed to get data");
+        }
+        $payload = json_decode($data, true);
         $payload['@headers'] = $req->getHeaders();
 
         $this->processPayload($payload, 'TEST');
@@ -195,6 +215,7 @@ class SparkPostController extends Controller
         } else {
             echo "Webhook already configured";
         }
+        return '';
     }
 
     /**
@@ -204,6 +225,7 @@ class SparkPostController extends Controller
      * @link https://www.sparkpost.com/blog/webhooks-beyond-the-basics/
      * @link https://support.sparkpost.com/customer/portal/articles/1976204-webhook-event-reference
      * @param HTTPRequest $req
+     * @return HTTPResponse
      */
     public function incoming(HTTPRequest $req)
     {
@@ -225,7 +247,7 @@ class SparkPostController extends Controller
             return $response;
         }
 
-        $payload = json_decode($json, JSON_OBJECT_AS_ARRAY);
+        $payload = json_decode($json, true);
 
         // Check credentials if defined
         $isAuthenticated = true;
@@ -274,10 +296,13 @@ class SparkPostController extends Controller
         }
 
         $response->setBody('OK');
-
         return $response;
     }
 
+    /**
+     * @param HTTPRequest $req
+     * @return void
+     */
     protected function authRequest(HTTPRequest $req)
     {
         $requestUser = $req->getHeader('php_auth_user');
@@ -310,8 +335,9 @@ class SparkPostController extends Controller
     /**
      * Process data
      *
-     * @param array $payload
+     * @param array<mixed> $payload
      * @param string $batchId
+     * @return void
      */
     protected function processPayload(array $payload, $batchId = null)
     {
@@ -333,14 +359,14 @@ class SparkPostController extends Controller
 
             // Invalid payload: it should always be an object with a msys key containing the event
             if ($ev === null) {
-                $this->getLogger()->warn("Invalid payload: " . substr(json_encode($r), 0, 100) . '...');
+                $this->getLogger()->warning("Invalid payload: " . substr((string)json_encode($r), 0, 100) . '...');
                 continue;
             }
 
             // Check type: it should be an object with the type as key
             $type = key($ev);
             if (!isset($ev[$type])) {
-                $this->getLogger()->warn("Invalid type $type in SparkPost payload");
+                $this->getLogger()->warning("Invalid type $type in SparkPost payload");
                 continue;
             }
             $data = $ev[$type];
@@ -385,7 +411,7 @@ class SparkPostController extends Controller
     /**
      * Get logger
      *
-     * @return Psr\SimpleCache\CacheInterface
+     * @return \Psr\Log\LoggerInterface
      */
     public function getLogger()
     {

@@ -16,6 +16,7 @@ use Symfony\Component\Mailer\Header\MetadataHeader;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 use Symfony\Component\Mime\Header\UnstructuredHeader;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Symfony\Component\Mime\Header\ParameterizedHeader;
 use Symfony\Component\HttpClient\Response\MockResponse;
 use Symfony\Component\Mailer\Transport\AbstractApiTransport;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
@@ -38,8 +39,17 @@ class SparkPostApiTransport extends AbstractApiTransport
      */
     private $apiClient;
 
+    /**
+     * @var array<mixed>
+     */
     private $apiResult;
 
+    /**
+     * @param SparkPostApiClient $apiClient
+     * @param HttpClientInterface|null $client
+     * @param EventDispatcherInterface|null $dispatcher
+     * @param LoggerInterface|null $logger
+     */
     public function __construct(SparkPostApiClient $apiClient, HttpClientInterface $client = null, EventDispatcherInterface $dispatcher = null, LoggerInterface $logger = null)
     {
         $this->apiClient = $apiClient;
@@ -98,24 +108,35 @@ class SparkPostApiTransport extends AbstractApiTransport
         return $response;
     }
 
+    /**
+     * @return array<mixed>
+     */
     public function getApiResult(): array
     {
         return $this->apiResult;
     }
 
-    private function getEndpoint(): ?string
+    /**
+     * @return string
+     */
+    private function getEndpoint(): string
     {
         return ($this->host ?: self::HOST) . ($this->port ? ':' . $this->port : '');
     }
 
+    /**
+     * @param Email $email
+     * @return array<array<mixed>>
+     */
     private function buildAttachments(Email $email): array
     {
         $result = [];
         foreach ($email->getAttachments() as $attachment) {
+            $preparedHeaders = $attachment->getPreparedHeaders();
             /** @var ParameterizedHeader $file */
-            $file = $attachment->getPreparedHeaders()->get('Content-Disposition');
+            $file = $preparedHeaders->get('Content-Disposition');
             /** @var ParameterizedHeader $type */
-            $type = $attachment->getPreparedHeaders()->get('Content-Type');
+            $type = $preparedHeaders->get('Content-Type');
 
             $result[] = [
                 'name' => $file->getParameter('filename'),
@@ -130,7 +151,7 @@ class SparkPostApiTransport extends AbstractApiTransport
     /**
      * @param Email $email
      * @param Envelope $envelope
-     * @return array
+     * @return array<mixed>
      */
     private function getPayload(Email $email, Envelope $envelope): array
     {
@@ -198,7 +219,7 @@ class SparkPostApiTransport extends AbstractApiTransport
         }
         if ($emailHeaders->has('X-MC-Metadata')) {
             $metadataHeader = $emailHeaders->get('X-MC-Metadata');
-            $metadata = json_decode(self::getHeaderValue($metadataHeader), JSON_OBJECT_AS_ARRAY);
+            $metadata = json_decode(self::getHeaderValue($metadataHeader), true);
             $emailHeaders->remove('X-MC-Metadata');
         }
         if ($emailHeaders->has('X-MC-InlineCSS')) {
@@ -213,7 +234,7 @@ class SparkPostApiTransport extends AbstractApiTransport
         $msysHeader = [];
         if ($emailHeaders->has('X-MSYS-API')) {
             $msysHeaderObj = $emailHeaders->get('X-MSYS-API');
-            $msysHeader = json_decode(self::getHeaderValue($msysHeaderObj), JSON_OBJECT_AS_ARRAY);
+            $msysHeader = json_decode(self::getHeaderValue($msysHeaderObj), true);
             if (!empty($msysHeader['tags'])) {
                 $tags = array_merge($tags, $msysHeader['tags']);
             }
@@ -262,22 +283,23 @@ class SparkPostApiTransport extends AbstractApiTransport
             $bcc[] = array(
                 'email' => $bccEmail,
                 'name' => $bccName,
-                'header_to' => $primaryEmail ? $primaryEmail : $ccEmail,
+                'header_to' => $primaryEmail ? $primaryEmail : $bccEmail,
             );
         }
 
         $bodyHtml = $email->getHtmlBody();
         $bodyText = $email->getTextBody();
 
+        if ($bodyHtml && is_string($bodyHtml)) {
+            // If we ask to provide plain, use our custom method instead of the provided one
+            if (SparkPostHelper::config()->provide_plain) {
+                $bodyText = EmailUtils::convert_html_to_text($bodyHtml);
+            }
 
-        // If we ask to provide plain, use our custom method instead of the provided one
-        if ($bodyHtml && SparkPostHelper::config()->provide_plain) {
-            $bodyText = EmailUtils::convert_html_to_text($bodyHtml);
-        }
-
-        // Should we inline css
-        if (!$inlineCss && SparkPostHelper::config()->inline_styles) {
-            $bodyHtml = EmailUtils::inline_styles($bodyHtml);
+            // Should we inline css
+            if (!$inlineCss && SparkPostHelper::config()->inline_styles) {
+                $bodyHtml = EmailUtils::inline_styles($bodyHtml);
+            }
         }
 
         // Custom unsubscribe list
@@ -351,8 +373,9 @@ class SparkPostApiTransport extends AbstractApiTransport
      * Log message content
      *
      * @param Email $message
-     * @param array $results Results from the api
+     * @param array<mixed> $results Results from the api
      * @throws Exception
+     * @return void
      */
     protected function logMessageContent(Email $message, $results = [])
     {
@@ -382,9 +405,7 @@ class SparkPostApiTransport extends AbstractApiTransport
         $logContent .= 'Subject : ' . $subject . "\n";
         $logContent .= 'From : ' . print_r($message->getFrom(), true) . "\n";
         $logContent .= 'Headers:' . "\n" . $emailHeaders->toString() . "\n";
-        if (!empty($params['recipients'])) {
-            $logContent .= 'Recipients : ' . print_r($message->getTo(), true) . "\n";
-        }
+        $logContent .= 'Recipients : ' . print_r($message->getTo(), true) . "\n";
         $logContent .= 'Results:' . "\n";
         $logContent .= print_r($results, true) . "\n";
         $logContent .= '</pre>';
