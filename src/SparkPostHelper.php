@@ -301,8 +301,13 @@ class SparkPostHelper
             return $configEmail;
         }
         // Use admin email if set
-        if ($admin = Email::config()->admin_email) {
-            return $admin;
+        if ($adminEmail = Email::config()->admin_email) {
+            if (is_array($adminEmail) && count($adminEmail ?? []) > 0) {
+                $email = array_keys($adminEmail)[0];
+                return [$email => $adminEmail[$email]];
+            } elseif (is_string($adminEmail)) {
+                return $adminEmail;
+            }
         }
         // If we still don't have anything, create something based on the domain
         if ($createDefault) {
