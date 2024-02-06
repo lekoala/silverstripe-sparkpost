@@ -3,6 +3,7 @@
 namespace LeKoala\SparkPost;
 
 use Pelago\Emogrifier\CssInliner;
+use Symfony\Component\Mime\Address;
 use Pelago\Emogrifier\HtmlProcessor\HtmlPruner;
 use Pelago\Emogrifier\HtmlProcessor\CssToAttributeConverter;
 
@@ -30,7 +31,7 @@ class EmailUtils
     }
 
     /**
-     * @param array<string|int,string|null>|string|null|bool $email
+     * @param array<string|int,string|null>|string|null|bool|Address $email
      * @return string|null
      */
     public static function stringify($email)
@@ -38,10 +39,29 @@ class EmailUtils
         if (!$email || is_bool($email)) {
             return null;
         }
+        if ($email instanceof Address) {
+            if ($email->getName()) {
+                return $email->getName() . ' <' . $email->getAddress() . '>';
+            }
+            return $email->getAddress();
+        }
         if (is_array($email)) {
             return $email[1] . ' <' . $email[0] . '>';
         }
         return $email;
+    }
+
+    /**
+     * @param array<mixed> $emails
+     * @return string
+     */
+    public static function stringifyArray(array $emails)
+    {
+        $result = [];
+        foreach ($emails as $email) {
+            $result[] = self::stringify($email);
+        }
+        return implode(", ", $result);
     }
 
     /**

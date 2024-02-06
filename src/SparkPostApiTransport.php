@@ -403,11 +403,10 @@ class SparkPostApiTransport extends AbstractApiTransport
 
         // Append some extra information at the end
         $logContent .= '<hr><pre>Debug infos:' . "\n\n";
-        $logContent .= 'To : ' . print_r($message->getTo(), true) . "\n";
+        $logContent .= 'To : ' . EmailUtils::stringifyArray($message->getTo()) . "\n";
         $logContent .= 'Subject : ' . $subject . "\n";
-        $logContent .= 'From : ' . print_r($message->getFrom(), true) . "\n";
+        $logContent .= 'From : ' . EmailUtils::stringifyArray($message->getFrom()) . "\n";
         $logContent .= 'Headers:' . "\n" . $emailHeaders->toString() . "\n";
-        $logContent .= 'Recipients : ' . print_r($message->getTo(), true) . "\n";
         $logContent .= 'Results:' . "\n";
         $logContent .= print_r($results, true) . "\n";
         $logContent .= '</pre>';
