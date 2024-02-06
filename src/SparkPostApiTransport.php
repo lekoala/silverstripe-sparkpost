@@ -288,7 +288,7 @@ class SparkPostApiTransport extends AbstractApiTransport
         }
 
         $bodyHtml = (string)$email->getHtmlBody();
-        $bodyText = $email->getTextBody();
+        $bodyText = (string)$email->getTextBody();
 
         if ($bodyHtml) {
             // If we ask to provide plain, use our custom method instead of the provided one
