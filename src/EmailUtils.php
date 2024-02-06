@@ -88,7 +88,7 @@ class EmailUtils
         // Bold
         $content = str_ireplace(['<strong>', '</strong>', '<b>', '</b>'], "*", $content);
         // Replace links to keep them accessible
-        $content = preg_replace('/<a[\s\S]href="(.*?)"[\s\S]*?>(.*?)<\/a>/i', '$2 ($1)', $content);
+        $content = preg_replace('/<a(.*?)href=[\'"](.*?)[\'"](.*?)>(.*?)<\/a>/i', '$4 ($2)', $content);
         // Replace new lines
         $content = str_replace(['<br>', '<br/>', '<br />'], "\r\n", $content);
         // Remove html tags
