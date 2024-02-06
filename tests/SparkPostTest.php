@@ -7,7 +7,9 @@ use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Control\Email\Email;
 use LeKoala\SparkPost\SparkPostHelper;
 use SilverStripe\Core\Injector\Injector;
+use Symfony\Component\Mailer\Envelope;
 use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Address;
 
 /**
  * Test for SparkPost
@@ -112,5 +114,60 @@ class SparkPostTest extends SapphireTest
         $result = $transport->getApiResult();
 
         $this->assertEquals(1, $result['total_accepted_recipients']);
+    }
+
+    public function testPayload(): void
+    {
+        $mailer = SparkPostHelper::registerTransport();
+        /** @var \LeKoala\SparkPost\SparkPostApiTransport $transport */
+        $transport = SparkPostHelper::getTransportFromMailer($mailer);
+
+
+        $html = <<<HTML
+<!DOCTYPE html>
+<html>
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><style type="text/css">.red {color:red;}</style></head>
+<body><span class="red">red</span></body>
+</html>
+HTML;
+        $result = <<<HTML
+<!DOCTYPE html>
+<html>
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head>
+<body><span class="red" style="color: red;">red</span></body>
+</html>
+
+HTML;
+
+        $sender = new Address('test@test.com', "testman");
+        $recipients = [
+            new Address('rec@test.com', "testrec"),
+        ];
+        $email = new Email();
+        $email->setBody($html);
+        $envelope = new Envelope($sender, $recipients);
+        $payload = $transport->getPayload($email, $envelope);
+        $content = $payload['content'];
+
+        $payloadRecipients = $payload['recipients'][0];
+        $this->assertEquals("testrec", $recipients[0]->getName());
+        $this->assertEquals(
+            [
+                'address' => [
+                    'email' => 'rec@test.com',
+                    'name' => 'rec' // extracted from email due to how recipients work
+                ]
+            ],
+            $payloadRecipients
+        );
+        $payloadSender = $content['from'];
+        $this->assertEquals([
+            'email' => 'test@test.com',
+            'name' => 'testman'
+        ], $payloadSender);
+
+        // Make sure our styles are properly inlined
+        $this->assertEquals('red', $content['text']);
+        $this->assertEquals($result, $content['html']);
     }
 }

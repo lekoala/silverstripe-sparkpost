@@ -50,7 +50,10 @@ class EmailUtils
                 return $email[1] . ' <' . $email[0] . '>';
             }
             foreach ($email as $k => $v) {
-                return $v . ' <' . $k . '>';
+                if ($k) {
+                    return $v . ' <' . $k . '>';
+                }
+                return $v;
             }
         }
         return $email;

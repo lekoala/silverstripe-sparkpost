@@ -149,9 +149,9 @@ class SparkPostApiTransport extends AbstractApiTransport
     /**
      * @param Email $email
      * @param Envelope $envelope
-     * @return array<mixed>
+     * @return array<string,mixed>
      */
-    private function getPayload(Email $email, Envelope $envelope): array
+    public function getPayload(Email $email, Envelope $envelope): array
     {
         $from = $envelope->getSender();
 
@@ -180,6 +180,9 @@ class SparkPostApiTransport extends AbstractApiTransport
             }
 
             $recipientEmail = $recipient->getAddress();
+
+            // This is always going to be empty because of Envelope:77
+            // $this->recipients[] = new Address($recipient->getAddress());
             $recipientName = $recipient->getName();
             if (!$recipientName) {
                 $recipientName = EmailUtils::get_displayname_from_rfc_email($recipientEmail);

@@ -102,5 +102,16 @@ HTML;
 
         $this->assertEquals($expected, EmailUtils::stringify($testAddr));
         $this->assertEquals($expected, EmailUtils::stringify($testArr));
+        $this->assertEquals($expected, EmailUtils::stringify($testArr2));
+
+        $testArr = ['test@test.com'];
+        $testArr2 = ['test@test.com'];
+        $testAddr = new Address('test@test.com');
+
+        $expected = 'test@test.com';
+
+        $this->assertEquals($expected, EmailUtils::stringify($testAddr));
+        $this->assertEquals($expected, EmailUtils::stringify($testArr));
+        $this->assertEquals($expected, EmailUtils::stringify($testArr2));
     }
 }
