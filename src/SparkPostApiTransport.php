@@ -390,13 +390,15 @@ class SparkPostApiTransport extends AbstractApiTransport
         }
 
         $subject = $message->getSubject();
-        $body = $message->getBody();
-        $contentType = $message->getHtmlBody() !== null ? "text/html" : "text";
+        if ($message->getHtmlBody()) {
+            $contentType = "text/html";
+            $body = (string)$message->getHtmlBody();
+        } else {
+            $contentType = "text";
+            $body = $message->getBody()->toString();
+        }
 
         $logContent = $body;
-        if (is_object($logContent)) {
-            $logContent = $logContent->toString();
-        }
         $emailHeaders = $message->getHeaders();
 
         // Append some extra information at the end
