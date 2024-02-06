@@ -6,7 +6,6 @@ use SilverStripe\Core\Environment;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Control\Email\Email;
 use LeKoala\SparkPost\SparkPostHelper;
-use SilverStripe\Control\Email\Mailer;
 use SilverStripe\Core\Injector\Injector;
 use Symfony\Component\Mailer\MailerInterface;
 
@@ -17,8 +16,11 @@ use Symfony\Component\Mailer\MailerInterface;
  */
 class SparkPostTest extends SapphireTest
 {
+    /**
+     * @var MailerInterface
+     */
     protected $testMailer;
-    protected $isDummy = false;
+    protected bool $isDummy = false;
 
     protected function setUp(): void
     {
@@ -40,7 +42,7 @@ class SparkPostTest extends SapphireTest
         Injector::inst()->registerService($this->testMailer, MailerInterface::class);
     }
 
-    public function testSetup()
+    public function testSetup(): void
     {
         $inst = SparkPostHelper::registerTransport();
         $mailer = SparkPostHelper::getMailer();
@@ -49,7 +51,7 @@ class SparkPostTest extends SapphireTest
         $this->assertEquals($instClass, $instMailer);
     }
 
-    public function testClient()
+    public function testClient(): void
     {
         $client = SparkPostHelper::getClient();
 
@@ -61,11 +63,12 @@ class SparkPostTest extends SapphireTest
         }
     }
 
-    public function testTLSVersion()
+    public function testTLSVersion(): void
     {
         $ch = curl_init();
         // This fixes ca cert issues if server is not configured properly
-        if (strlen(ini_get('curl.cainfo')) === 0) {
+        $cainfo = ini_get('curl.cainfo');
+        if (is_string($cainfo) && strlen($cainfo) === 0) {
             curl_setopt($ch, CURLOPT_CAINFO, \Composer\CaBundle\CaBundle::getBundledCaBundlePath());
         }
         curl_setopt($ch, CURLOPT_URL, 'https://www.howsmyssl.com/a/check');
@@ -73,14 +76,15 @@ class SparkPostTest extends SapphireTest
         $data = curl_exec($ch);
         if (!$data) {
             $this->markTestIncomplete('Error: "' . curl_error($ch) . '" - Code: ' . curl_errno($ch));
-            return;
         }
         curl_close($ch);
-        $json = json_decode($data);
-        $this->assertNotEquals("TLS 1.0", $json->tls_version);
+        if (is_string($data)) {
+            $json = json_decode($data);
+            $this->assertNotEquals("TLS 1.0", $json->tls_version);
+        }
     }
 
-    public function testSending()
+    public function testSending(): void
     {
         $test_to = Environment::getEnv('SPARKPOST_TEST_TO');
         $test_from = Environment::getEnv('SPARKPOST_TEST_FROM');
@@ -103,6 +107,7 @@ class SparkPostTest extends SapphireTest
         // This is async, therefore it does not return anything anymore
         $email->send();
 
+        /** @var \LeKoala\SparkPost\SparkPostApiTransport $transport */
         $transport = SparkPostHelper::getTransportFromMailer($mailer);
         $result = $transport->getApiResult();
 

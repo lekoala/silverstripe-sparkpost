@@ -45,7 +45,7 @@ class SparkPostHelper
 
     /**
      * @param MailerInterface $mailer
-     * @return \Symfony\Component\Mailer\Transport\AbstractTransport|SparkpostApiTransport
+     * @return \Symfony\Component\Mailer\Transport\AbstractTransport|SparkPostApiTransport
      */
     public static function getTransportFromMailer($mailer)
     {

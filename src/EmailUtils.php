@@ -46,7 +46,12 @@ class EmailUtils
             return $email->getAddress();
         }
         if (is_array($email)) {
-            return $email[1] . ' <' . $email[0] . '>';
+            if (count($email) == 2) {
+                return $email[1] . ' <' . $email[0] . '>';
+            }
+            foreach ($email as $k => $v) {
+                return $v . ' <' . $k . '>';
+            }
         }
         return $email;
     }

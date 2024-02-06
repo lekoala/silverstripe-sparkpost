@@ -3,9 +3,8 @@
 namespace LeKoala\SparkPost\Test;
 
 use SilverStripe\Dev\SapphireTest;
-use SilverStripe\Control\Email\Email;
-use SilverStripe\Core\Injector\Injector;
 use LeKoala\SparkPost\EmailUtils;
+use Symfony\Component\Mime\Address;
 
 /**
  * Test for EmailUtils
@@ -14,7 +13,7 @@ use LeKoala\SparkPost\EmailUtils;
  */
 class EmailUtilsTest extends SapphireTest
 {
-    public function testDisplayName()
+    public function testDisplayName(): void
     {
         $arr = [
             // Standard emails
@@ -34,7 +33,7 @@ class EmailUtilsTest extends SapphireTest
         }
     }
 
-    public function testGetEmail()
+    public function testGetEmail(): void
     {
         $arr = [
             // Standard emails
@@ -54,10 +53,10 @@ class EmailUtilsTest extends SapphireTest
         }
     }
 
-    public function testInlineStyles()
+    public function testInlineStyles(): void
     {
         if (!class_exists(\Pelago\Emogrifier\CssInliner::class)) {
-            return $this->markTestIncomplete("Install pelago/emogrifier to run this test");
+            $this->markTestIncomplete("Install pelago/emogrifier to run this test");
         }
 
         $html = <<<HTML
@@ -80,14 +79,28 @@ HTML;
         $this->assertEquals($result, $process);
     }
 
-    public function testConvertHtmlToText()
+    public function testConvertHtmlToText(): void
     {
-        $someHtml = '   Some<br/>Text <a href="http://test.com">Link</a> <strong>End</strong>    ';
-
         $textResult = "Some\r\nText Link (http://test.com) *End*";
 
+        $someHtml = '   Some<br/>Text <a href="http://test.com">Link</a> <strong>End</strong>    ';
         $process = EmailUtils::convert_html_to_text($someHtml);
-
         $this->assertEquals($textResult, $process);
+
+        $someHtml = "   Some<br/>Text <a class='test' href='http://test.com'>Link</a> <strong>End</strong>    ";
+        $process = EmailUtils::convert_html_to_text($someHtml);
+        $this->assertEquals($textResult, $process);
+    }
+
+    public function testStringify(): void
+    {
+        $testArr = ['test@test.com' => 'Testman'];
+        $testArr2 = ['test@test.com', 'Testman'];
+        $testAddr = new Address('test@test.com', 'Testman');
+
+        $expected = 'Testman <test@test.com>';
+
+        $this->assertEquals($expected, EmailUtils::stringify($testAddr));
+        $this->assertEquals($expected, EmailUtils::stringify($testArr));
     }
 }
