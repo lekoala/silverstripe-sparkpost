@@ -389,20 +389,19 @@ class SparkPostApiTransport extends AbstractApiTransport
             return;
         }
 
+        $logContent = "";
+
         $subject = $message->getSubject();
         if ($message->getHtmlBody()) {
-            $contentType = "text/html";
-            $body = (string)$message->getHtmlBody();
+            $logContent .= (string)$message->getHtmlBody();
         } else {
-            $contentType = "text";
-            $body = $message->getBody()->toString();
+            $logContent .= $message->getBody()->toString();
         }
-
-        $logContent = $body;
+        $logContent .= "<hr/>";
         $emailHeaders = $message->getHeaders();
 
         // Append some extra information at the end
-        $logContent .= '<hr><pre>Debug infos:' . "\n\n";
+        $logContent .= '<pre>Debug infos:' . "\n\n";
         $logContent .= 'To : ' . EmailUtils::stringifyArray($message->getTo()) . "\n";
         $logContent .= 'Subject : ' . $subject . "\n";
         $logContent .= 'From : ' . EmailUtils::stringifyArray($message->getFrom()) . "\n";
@@ -428,8 +427,7 @@ class SparkPostApiTransport extends AbstractApiTransport
         }
 
         // Store it
-        $ext = ($contentType == 'text/html') ? 'html' : 'txt';
-        $r = file_put_contents($logFolder . '/' . $logName . '.' . $ext, $logContent);
+        $r = file_put_contents($logFolder . '/' . $logName . '.html', $logContent);
 
         if (!$r && Director::isDev()) {
             throw new Exception('Failed to store email in ' . $logFolder);
