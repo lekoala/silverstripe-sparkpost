@@ -261,6 +261,30 @@ class SparkPostHelper
     }
 
     /**
+     * @param string $email
+     * @return bool
+     */
+    public static function isEmailSuppressed($email)
+    {
+        $client = self::getClient();
+
+        $state = $client->getSuppression($email);
+        if (empty($state)) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * @param string $email
+     * @return void
+     */
+    public static function removeSuppression($email)
+    {
+        self::getClient()->deleteSuppression($email);
+    }
+
+    /**
      * Check if email is ready to send emails
      *
      * @param string $email

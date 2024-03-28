@@ -35,12 +35,14 @@ use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Security\PermissionProvider;
 use SilverStripe\Security\DefaultAdminService;
 use SilverStripe\Forms\GridField\GridFieldConfig;
+use SilverStripe\Forms\GridField\GridFieldConfig_RecordViewer;
 use SilverStripe\Forms\GridField\GridFieldFooter;
 use SilverStripe\Forms\GridField\GridFieldDetailForm;
 use SilverStripe\Forms\GridField\GridFieldDataColumns;
 use Symbiote\GridFieldExtensions\GridFieldTitleHeader;
 use SilverStripe\Forms\GridField\GridFieldToolbarHeader;
 use SilverStripe\Forms\GridField\GridFieldSortableHeader;
+use SilverStripe\Forms\GridField\GridFieldFilterHeader;
 
 /**
  * Allow you to see messages sent through the api key used to send messages
@@ -266,6 +268,65 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             $root = new TabSet('Root', $messagesTab)
         ]);
 
+        $suppressionsTab = new Tab('Suppressions', _t('SparkPostAdmin.Suppressions', 'Suppressions'));
+
+        // Show the summary
+        $summary = $this->getCachedData('suppressionSummary');
+        if ($summary) {
+            $callback = function ($k, $v) {
+                return ArrayData::create([
+                    'Title' => $k,
+                    'Value' => $v,
+                ]);
+            };
+            $summaryArray = array_map($callback, array_keys($summary), array_values($summary));
+            $summaryGrid = GridField::create(
+                'SuppressionSummary',
+                _t('SparkPostAdmin.Suppressionsummary', 'Suppression summary'),
+                new ArrayList($summaryArray)
+            );
+            //@link https://docs.silverstripe.org/en/5/developer_guides/forms/using_gridfield_with_arbitrary_data/
+            $summaryGrid->getConfig()->removeComponentsByType(GridFieldFilterHeader::class);
+            /** @var GridFieldDataColumns $columns */
+            $columns = $summaryGrid->getConfig()->getComponentByType(GridFieldDataColumns::class);
+            $columns->setDisplayFields([
+                'Title' => _t('SparkPostAdmin.Title', 'Title'),
+                'Value' => _t('SparkPostAdmin.Value', 'Value'),
+            ]);
+            $suppressionsTab->push($summaryGrid);
+        }
+
+
+        // Show recent suppressions
+        $client = SparkPostHelper::getClient();
+        $suppressions = $this->getCachedData('searchSuppressions', [
+            'from' => $client->createValidDatetime('-90 days')
+        ]);
+        if ($suppressions) {
+            $suppressionGrid = GridField::create(
+                'RecentSuppressions',
+                _t('SparkPostAdmin.RecentSuppressions', 'Recent suppressions'),
+                new ArrayList(array_map(function ($item) {
+                    return ArrayData::create($item);
+                }, $suppressions))
+            );
+            //@link https://docs.silverstripe.org/en/5/developer_guides/forms/using_gridfield_with_arbitrary_data/
+            $suppressionGrid->getConfig()->removeComponentsByType(GridFieldFilterHeader::class);
+            /** @var GridFieldDataColumns $columns */
+            $columns = $suppressionGrid->getConfig()->getComponentByType(GridFieldDataColumns::class);
+            $columns->setDisplayFields([
+                'recipient' => _t('SparkPostAdmin.Recipient', 'Recipient'),
+                'type' => _t('SparkPostAdmin.Type', 'Type'),
+                'source' => _t('SparkPostAdmin.Source', 'Source'),
+                'description' => _t('SparkPostAdmin.Description', 'Description'),
+                'created' => _t('SparkPostAdmin.Created', 'Created'),
+                // 'updated' => _t('SparkPostAdmin.Updated', 'Updated'),
+            ]);
+            $suppressionsTab->push($suppressionGrid);
+        }
+
+        $fields->addFieldToTab('Root', $suppressionsTab);
+
         $settingsTab = new Tab('Settings', _t('SparkPostAdmin.Settings', 'Settings'));
         if ($this->CanConfigureApi()) {
             $domainTabData = $this->DomainTab();
@@ -388,7 +449,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
      * @param int $expireInSeconds
      * @return array<mixed>|false
      */
-    protected function getCachedData($method, $params, $expireInSeconds = 60)
+    protected function getCachedData($method, $params = null, $expireInSeconds = 60)
     {
         $enabled = $this->getCacheEnabled();
         $cacheResult = false;

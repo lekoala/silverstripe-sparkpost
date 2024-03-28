@@ -10,6 +10,7 @@ use LeKoala\SparkPost\EmailUtils;
 /**
  * A really simple SparkPost api client
  *
+ * @link https://developers.sparkpost.com/api/
  * @author LeKoala <thomas@lekoala.be>
  */
 class SparkPostApiClient
@@ -884,6 +885,66 @@ class SparkPostApiClient
     public function deleteRelayWebhook($id)
     {
         return $this->makeRequest('relay-webhooks/' . $id, self::METHOD_DELETE);
+    }
+
+    /**
+     * @link https://developers.sparkpost.com/api/suppression-list/#suppression-list-get-retrieve-a-suppression
+     * @param string $recipient
+     * @return array<array{"recipient":string,"type":string,"source":string,"description":string,"created":string,"updated":string,"transactional":bool,"subaccount_id"?:int}>
+     */
+    public function getSuppression($recipient)
+    {
+        return $this->makeRequest('suppression-list/' . $recipient, self::METHOD_GET);
+    }
+
+    /**
+     * @link https://developers.sparkpost.com/api/suppression-list/#suppression-list-put-create-or-update-a-suppression
+     * @param string $recipient
+     * @param bool $isTransactional
+     * @param string $description
+     * @return array<mixed>
+     */
+    public function createSuppression($recipient, $isTransactional = true, $description = '')
+    {
+        return $this->makeRequest('suppression-list/' . $recipient, self::METHOD_PUT, [
+            'type' => $isTransactional ? 'transactional' : 'non_transactional',
+            'description' => $description
+        ]);
+    }
+
+    /**
+     * @param string $recipient
+     * @return array<mixed>
+     */
+    public function deleteSuppression($recipient)
+    {
+        return $this->makeRequest('suppression-list/' . $recipient, self::METHOD_DELETE);
+    }
+
+    /**
+     * @link https://developers.sparkpost.com/api/suppression-list/#suppression-list-get-search-suppressions
+     * @param array{'from'?:string,'to'?:string,'domain'?:string,'sources'?:string,'types'?:string,'description'?:string} $params
+     * @return array<array{"recipient":string,"type":string,"source":string,"description":string,"created":string,"updated":string,"transactional":bool}>
+     */
+    public function searchSuppressions($params = [])
+    {
+        $defaultParams = [
+            'per_page' => 10,
+            'from' => $this->createValidDatetime('-30 days'),
+        ];
+        $params = array_merge($defaultParams, $params);
+
+        return $this->makeRequest('suppression-list', self::METHOD_GET, $params);
+    }
+
+    /**
+     * @link https://developers.sparkpost.com/api/suppression-list/#suppression-list-get-retrieve-summary
+     * @return array{"spam_complaint":int,"list_unsubscribe":int,"bounce_rule":int,"unsubscribe_link":int,"manually_added":int,"compliance":int,"total":int}
+     */
+    public function suppressionSummary()
+    {
+        //@phpstan-ignore-next-line
+        return $this->makeRequest('suppression-list/summary', self::METHOD_GET);
     }
 
     /**
