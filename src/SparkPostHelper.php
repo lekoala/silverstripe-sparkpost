@@ -14,6 +14,7 @@ use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Core\Config\Configurable;
 use LeKoala\SparkPost\Api\SparkPostApiClient;
 use Symfony\Component\Mailer\MailerInterface;
+use SilverStripe\Core\Injector\InjectorNotFoundException;
 
 /**
  * This configurable class helps decoupling the api client from SilverStripe
@@ -243,7 +244,6 @@ class SparkPostHelper
     public static function registerTransport()
     {
         $client = self::getClient();
-        $mailer = self::getMailer();
         $transport = new SparkPostApiTransport($client);
         $mailer = new Mailer($transport);
         Injector::inst()->registerService($mailer, MailerInterface::class);
