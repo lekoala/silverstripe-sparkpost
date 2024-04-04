@@ -295,6 +295,7 @@ class SparkPostHelper
         if (!$email) {
             return false;
         }
+        $email = EmailUtils::get_email_from_rfc_email($email);
         $parts = explode("@", $email);
         if (count($parts) != 2) {
             return false;

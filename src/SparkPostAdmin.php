@@ -29,6 +29,7 @@ use SilverStripe\Forms\DropdownField;
 use SilverStripe\Security\Permission;
 use LeKoala\SparkPost\SparkPostHelper;
 use SilverStripe\Control\HTTPResponse;
+use SilverStripe\Core\Convert;
 use SilverStripe\Forms\CompositeField;
 use SilverStripe\SiteConfig\SiteConfig;
 use SilverStripe\Forms\GridField\GridField;
@@ -343,7 +344,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
             // Show default from email
             $defaultEmail = SparkPostHelper::resolveDefaultFromEmail();
             $defaultEmailDisplayed = EmailUtils::stringify($defaultEmail);
-            $toolsHtml .= "<p>Default sending email: " . $defaultEmailDisplayed . " (" . SparkPostHelper::resolveDefaultFromEmailType() . ")</p>";
+            $toolsHtml .= "<p>Default sending email: " . Convert::raw2xml($defaultEmailDisplayed) . " (" . SparkPostHelper::resolveDefaultFromEmailType() . ")</p>";
             if (!SparkPostHelper::isEmailDomainReady($defaultEmailDisplayed)) {
                 $toolsHtml .= '<p style="color:red">The default email is not ready to send emails</p>';
             }
