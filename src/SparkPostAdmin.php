@@ -456,7 +456,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         $cacheResult = false;
         $cache = $this->getCache();
         if ($enabled) {
-            $key = md5(serialize($params));
+            $key = $method . '_' . md5(serialize($params));
             $cacheResult = $cache->get($key);
         }
         if ($enabled && $cacheResult) {
@@ -1027,6 +1027,10 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
         $list = new ArrayList();
         if ($domains) {
             foreach ($domains as $domain) {
+                // Sometimes the api or the cache returns invalid data...
+                if (!is_array($domain)) {
+                    continue;
+                }
                 $list->push(new ArrayData([
                     'Domain' => $domain['domain'],
                     'SPF' => $domain['status']['spf_status'],
