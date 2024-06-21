@@ -414,7 +414,7 @@ class SparkPostApiTransport extends AbstractApiTransport
         // Generate filename
         $filter = new FileNameFilter();
         $title = substr($filter->filter($subject), 0, 35);
-        $logName = date('Ymd_His') . '_' . $title;
+        $logName = date('Ymd_His') . '_' . bin2hex(random_bytes(2)) . '_' . $title;
 
         // Store attachments if any
         $attachments = $message->getAttachments();
