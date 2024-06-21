@@ -79,7 +79,7 @@ class SparkPostApiTransport extends AbstractApiTransport
             $result = [
                 'total_rejected_recipients' => 0,
                 'total_accepted_recipients' => count($to),
-                'id' => uniqid(),
+                'id' => 'fake-' . uniqid(),
                 'disabled' => true,
             ];
         } else {
@@ -402,12 +402,16 @@ class SparkPostApiTransport extends AbstractApiTransport
         $emailHeaders = $message->getHeaders();
 
         // Append some extra information at the end
-        $logContent .= '<pre>Debug infos:' . "\n\n";
-        $logContent .= 'To : ' . EmailUtils::stringifyArray($message->getTo()) . "\n";
-        $logContent .= 'Subject : ' . $subject . "\n";
-        $logContent .= 'From : ' . EmailUtils::stringifyArray($message->getFrom()) . "\n";
-        $logContent .= 'Headers:' . "\n" . $emailHeaders->toString() . "\n";
-        $logContent .= 'Results:' . "\n";
+        $logContent .= '<pre>Headers:' . "\n\n";
+        $logContent .= $emailHeaders->toString();
+
+        // Store subsite
+        if (class_exists(\SilverStripe\Subsites\Model\Subsite::class)) {
+            $state = \SilverStripe\Subsites\State\SubsiteState::singleton();
+            $logContent .= "Subsite ID: " . $state->getSubsiteId() . "\n";
+        }
+
+        $logContent .= "\n" . 'Results:' . "\n";
         $logContent .= print_r($results, true) . "\n";
         $logContent .= '</pre>';
 
