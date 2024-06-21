@@ -11,6 +11,8 @@ use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Security\Permission;
 use SilverStripe\Control\HTTPResponse;
 use LeKoala\SparkPost\Api\SparkPostApiClient;
+use SilverStripe\Control\HTTP;
+use SilverStripe\ORM\ArrayList;
 
 /**
  * Provide extensions points for handling the webhook
@@ -35,7 +37,8 @@ class SparkPostController extends Controller
     private static $allowed_actions = [
         'incoming',
         'test',
-        'configure_inbound_emails'
+        'configure_inbound_emails',
+        'sent_emails',
     ];
 
     /**
@@ -64,6 +67,64 @@ class SparkPostController extends Controller
         ]);
     }
 
+    public function sent_emails(HTTPRequest $req)
+    {
+        if (!Director::isDev() && !Permission::check('ADMIN')) {
+            return $this->httpError(404);
+        }
+
+        $logFolder = SparkPostHelper::getLogFolder();
+        $view = $req->getVar('view');
+        $download = $req->getVar('download');
+        $base = Director::baseFolder();
+
+        if ($download) {
+            $file = $logFolder . '/' . $download;
+            if (!is_file($file) || dirname($file) != $logFolder) {
+                return $this->httpError(404);
+            }
+
+            $fileData = file_get_contents($file);
+            $fileName = $download;
+            return HTTPRequest::send_file($fileData, $fileName);
+        }
+
+        if ($view) {
+            $file = $logFolder . '/' . $view;
+            if (!is_file($file) || dirname($file) != $logFolder) {
+                return $this->httpError(404);
+            }
+
+            $content = file_get_contents($file);
+            $content = str_replace($logFolder . '/', '/__sparkpost/sent_emails?download=', $content);
+            $content = str_replace($base, '', $content);
+
+            $customFields = [
+                'Email' => $content
+            ];
+        } else {
+            $emails = new ArrayList();
+            $items = glob("$logFolder/*.html", GLOB_NOSORT);
+            usort($items, function ($a, $b) {
+                return filemtime($b) - filemtime($a);
+            });
+
+            foreach ($items as $email) {
+                $emails->push([
+                    'File' => $email,
+                    'Name' => basename($email),
+                    'Date' => date('Y-m-d H:i:s', filemtime($email)),
+                ]);
+            }
+
+            $customFields = [
+                'Emails' => $emails
+            ];
+        }
+
+        return $this->renderWith('LeKoala/SparkPost/SparkPostController_sent_emails', $customFields);
+    }
+
     /**
      * You can also see /resources/sample.json
      *
@@ -73,7 +134,7 @@ class SparkPostController extends Controller
     public function test(HTTPRequest $req)
     {
         if (!Director::isDev()) {
-            return 'You can only test in dev mode';
+            return $this->httpError(404);
         }
 
         $file = $this->getRequest()->getVar('file');
