@@ -76,6 +76,7 @@ class SparkPostController extends Controller
         $logFolder = SparkPostHelper::getLogFolder();
         $view = $req->getVar('view');
         $download = $req->getVar('download');
+        $iframe = $req->getVar('iframe');
         $base = Director::baseFolder();
 
         if ($download) {
@@ -89,6 +90,15 @@ class SparkPostController extends Controller
             return HTTPRequest::send_file($fileData, $fileName);
         }
 
+        if ($iframe) {
+            $file = $logFolder . '/' . $view;
+            if (!is_file($file) || dirname($file) != $logFolder) {
+                return $this->httpError(404);
+            }
+            $content = file_get_contents($file);
+            return $content;
+        }
+
         if ($view) {
             $file = $logFolder . '/' . $view;
             if (!is_file($file) || dirname($file) != $logFolder) {
@@ -100,7 +110,8 @@ class SparkPostController extends Controller
             $content = str_replace($base, '', $content);
 
             $customFields = [
-                'Email' => $content
+                'Email' => $content,
+                'Name' => $view,
             ];
         } else {
             $emails = new ArrayList();

@@ -9,7 +9,7 @@
 <% if Email %>
 <a href="/__sparkpost/sent_emails">Back</a>
 <hr>
-    $Email.RAW
+<iframe style="min-width:600px;max-width:100%;min-height:480px;border:0;resize:both;border:1px dashed" src="?view=$Name&iframe=1"></iframe>
 <% else %>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sakura.css/css/sakura.css" type="text/css">
 <h1>Sent emails</h1>
