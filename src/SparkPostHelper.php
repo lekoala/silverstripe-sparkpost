@@ -145,6 +145,13 @@ class SparkPostHelper
         }
 
         $sending_disabled = self::getEnvSendingDisabled();
+        if ($sending_disabled === false) {
+            // In dev, if we didn't set a value, disable by default
+            // This can avoid sending emails by mistake :-) oops!
+            if (Director::isDev() && !self::hasEnvSendingDisabled()) {
+                $sending_disabled = true;
+            }
+        }
         if ($sending_disabled) {
             self::config()->disable_sending = $sending_disabled;
         }
@@ -185,6 +192,14 @@ class SparkPostHelper
     public static function getEnvSendingDisabled()
     {
         return Environment::getEnv('SPARKPOST_SENDING_DISABLED');
+    }
+
+    /**
+     * @return bool
+     */
+    public static function hasEnvSendingDisabled()
+    {
+        return Environment::hasEnv('SPARKPOST_SENDING_DISABLED');
     }
 
     /**

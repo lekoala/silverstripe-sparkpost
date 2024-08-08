@@ -75,6 +75,13 @@ class SparkPostApiTransport extends AbstractApiTransport
 
         $to = $email->getTo();
 
+        // check .local addresses
+        foreach ($to as $addr) {
+            if (str_ends_with($addr->getAddress(), '.local')) {
+                $disableSending = true;
+            }
+        }
+
         if ($disableSending) {
             $result = [
                 'total_rejected_recipients' => 0,
