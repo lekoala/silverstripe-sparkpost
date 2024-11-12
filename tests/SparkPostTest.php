@@ -86,6 +86,35 @@ class SparkPostTest extends SapphireTest
         }
     }
 
+    public function testSendAllTo(): void
+    {
+        $sendAllTo = Environment::getEnv('SS_SEND_ALL_EMAILS_TO');
+
+        $mailer = SparkPostHelper::registerTransport();
+
+        $email = new Email();
+        $email->setSubject('Test email');
+        $email->setBody("Body of my email");
+        $email->getHeaders()->addTextHeader('X-SendingDisabled', "true");
+        $email->setTo("sendfrom@test.local");
+
+        // This is async, therefore it does not return anything anymore
+        $email->send();
+
+        /** @var \LeKoala\SparkPost\SparkPostApiTransport $transport */
+        $transport = SparkPostHelper::getTransportFromMailer($mailer);
+        $result = $transport->getApiResult();
+
+        $this->assertEquals($sendAllTo, $result["email"]);
+
+        Environment::setEnv("SS_SEND_ALL_EMAILS_TO", "sendall@test.local");
+
+        $email->send();
+        $result = $transport->getApiResult();
+
+        $this->assertEquals("sendall@test.local", $result["email"]);
+    }
+
     public function testSending(): void
     {
         $test_to = Environment::getEnv('SPARKPOST_TEST_TO');

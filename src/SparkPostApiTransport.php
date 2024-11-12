@@ -18,6 +18,7 @@ use Symfony\Component\Mime\Header\ParameterizedHeader;
 use Symfony\Component\HttpClient\Response\MockResponse;
 use Symfony\Component\Mailer\Transport\AbstractApiTransport;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\Mailer\Event\MessageEvent;
 
 /**
  * We create our own class
@@ -43,6 +44,11 @@ class SparkPostApiTransport extends AbstractApiTransport
     private $apiResult;
 
     /**
+     * @var EventDispatcherInterface
+     */
+    private $dispatcher = null;
+
+    /**
      * @param SparkPostApiClient $apiClient
      * @param HttpClientInterface|null $client
      * @param EventDispatcherInterface|null $dispatcher
@@ -58,6 +64,8 @@ class SparkPostApiTransport extends AbstractApiTransport
             $this->setHost(self::HOST);
         }
 
+        // We need our own reference
+        $this->dispatcher = $dispatcher;
         parent::__construct($client, $dispatcher, $logger);
     }
 
@@ -66,8 +74,22 @@ class SparkPostApiTransport extends AbstractApiTransport
         return sprintf('sparkpost+api://%s', $this->getEndpoint());
     }
 
+    private function dispatchEvent(Email $email, Envelope $envelope = null): void
+    {
+        if (!$this->dispatcher) {
+            return;
+        }
+        $sender = $email->getSender()[0] ?? $email->getFrom()[0] ?? null;
+        $recipients = $email->getTo();
+        $envelope ??= new Envelope($sender, $recipients);
+        $event = new MessageEvent($email, $envelope, $this);
+        $this->dispatcher->dispatch($event);
+    }
+
     protected function doSendApi(SentMessage $sentMessage, Email $email, Envelope $envelope): ResponseInterface
     {
+        $this->dispatchEvent($email, $envelope);
+
         $disableSending = $email->getHeaders()->has('X-SendingDisabled') || !SparkPostHelper::getSendingEnabled();
 
         // We don't really care about the actual response
