@@ -105,7 +105,9 @@ class SparkPostTest extends SapphireTest
         $transport = SparkPostHelper::getTransportFromMailer($mailer);
         $result = $transport->getApiResult();
 
-        $this->assertEquals($sendAllTo, $result["email"]);
+        // if we have a send all to, it should match
+        $realRecipient = $sendAllTo ? $sendAllTo : "sendfrom@test.local";
+        $this->assertEquals($realRecipient, $result["email"]);
 
         Environment::setEnv("SS_SEND_ALL_EMAILS_TO", "sendall@test.local");
 
