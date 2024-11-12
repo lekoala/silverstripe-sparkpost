@@ -113,6 +113,9 @@ class SparkPostTest extends SapphireTest
         $result = $transport->getApiResult();
 
         $this->assertEquals("sendall@test.local", $result["email"]);
+
+        // reset env
+        Environment::setEnv("SS_SEND_ALL_EMAILS_TO", $sendAllTo);
     }
 
     public function testSending(): void
