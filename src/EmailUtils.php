@@ -113,12 +113,16 @@ class EmailUtils
      *
      * Note: use /u to support utf8 strings
      *
-     * @param string $rfc_email_string
+     * @param string|array<string|int,string|null> $rfc_email_string
      * @return string
      */
     public static function get_displayname_from_rfc_email($rfc_email_string)
     {
-        $name = preg_match('/[\w\s\-\.]+/u', $rfc_email_string, $matches);
+        $rfc_email_string = self::stringify($rfc_email_string);
+        if (!$rfc_email_string) {
+            return null;
+        }
+        $result = preg_match('/[\w\s\-\.]+/u', $rfc_email_string, $matches);
         $matches[0] = trim($matches[0]);
         return $matches[0];
     }
@@ -126,15 +130,19 @@ class EmailUtils
     /**
      * Extract parts between brackets
      *
-     * @param string $rfc_email_string
-     * @return string
+     * @param string|array<string|int,string|null> $rfc_email_string
+     * @return ?string
      */
     public static function get_email_from_rfc_email($rfc_email_string)
     {
+        $rfc_email_string = self::stringify($rfc_email_string);
+        if (!$rfc_email_string) {
+            return null;
+        }
         if (strpos($rfc_email_string, '<') === false) {
             return $rfc_email_string;
         }
-        $mailAddress = preg_match('/(?:<)(.+)(?:>)$/', $rfc_email_string, $matches);
+        $result = preg_match('/(?:<)(.+)(?:>)$/', $rfc_email_string, $matches);
         if (empty($matches)) {
             return $rfc_email_string;
         }
