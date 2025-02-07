@@ -21,6 +21,8 @@ use SilverStripe\ORM\ArrayList;
  */
 class SparkPostController extends Controller
 {
+    private static $url_segment = '__sparkpost';
+
     /**
      * @var int
      */
