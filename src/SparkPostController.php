@@ -382,10 +382,10 @@ class SparkPostController extends Controller
         $requestUser = $req->getHeader('php_auth_user');
         $requestPassword = $req->getHeader('php_auth_pw');
         if (!$requestUser) {
-            $requestUser = $_SERVER['PHP_AUTH_USER'];
+            $requestUser = $_SERVER['PHP_AUTH_USER'] ?? null;
         }
         if (!$requestPassword) {
-            $requestPassword = $_SERVER['PHP_AUTH_PW'];
+            $requestPassword = $_SERVER['PHP_AUTH_PW'] ?? null;
         }
 
         $authError = null;
