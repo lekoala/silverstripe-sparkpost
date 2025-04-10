@@ -414,12 +414,38 @@ class SparkPostHelper
      */
     public static function getSenderFromSiteConfig()
     {
-        $config = SiteConfig::current_site_config();
-        $config_field = self::config()->siteconfig_from;
-        if ($config_field && !empty($config->$config_field)) {
-            return $config->$config_field;
+        if (!class_exists(SiteConfig::class)) {
+            return false;
+        }
+        try {
+            $config = SiteConfig::current_site_config();
+            $config_field = self::config()->siteconfig_from;
+            if ($config_field && !empty($config->$config_field)) {
+                return $config->$config_field;
+            }
+        } catch (Exception $e) {
+            // Ignore if SiteConfig is not installed
         }
         return false;
+    }
+
+    public static function addMetaData(Email $email, array $meta, bool $replace = false)
+    {
+        $key = 'X-MC-Metadata';
+        $headers = $email->getHeaders();
+
+        // Merge with current
+        if (!$replace) {
+            $current = $headers->get($key);
+            if ($current) {
+                $current = json_decode($current->getBodyAsString(), true);
+                $meta = array_merge($current, $meta);
+            }
+        }
+
+        // Remove and then add, to keep always one
+        $headers->remove($key);
+        $headers->addTextHeader($key, json_encode($meta));
     }
 
     /**

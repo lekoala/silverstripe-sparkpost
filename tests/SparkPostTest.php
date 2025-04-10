@@ -2,6 +2,8 @@
 
 namespace LeKoala\SparkPost\Test;
 
+use LeKoala\Base\Email\EmailHelper;
+use LeKoala\SparkPost\SparkPostApiTransport;
 use SilverStripe\Core\Environment;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Control\Email\Email;
@@ -203,5 +205,126 @@ HTML;
         // Make sure our styles are properly inlined
         $this->assertEquals('red', $content['text']);
         $this->assertEquals($result, $content['html']);
+    }
+
+    public function testMeta()
+    {
+        $meta = [
+            'TestID' => 1,
+            'SomeText' => 'test',
+        ];
+        $wrongMeta = [
+            'WrongMeta' => true
+        ];
+        $tags = ['test-tag'];
+
+        // Meta can be set using the mandrill compat layer
+        $email = new Email();
+        // meta is json encoded
+        // https://mailchimp.com/developer/transactional/docs/smtp-integration/#x-mc-metadata
+        $email->getHeaders()->addTextHeader('X-MC-Metadata', json_encode($meta));
+        // tags are , delimited
+        // https://mailchimp.com/developer/transactional/docs/smtp-integration/#x-mc-tags
+        $email->getHeaders()->addTextHeader('X-MC-Tags', implode(',', $tags));
+        $email->setTo('dummy@localhost');
+        $client = SparkPostHelper::getClient();
+        $api = new SparkPostApiTransport($client);
+
+        $sender = $email->getSender()[0] ?? $email->getFrom()[0] ?? null;
+        $recipients = $email->getTo();
+        $envelope ??= new Envelope($sender, $recipients);
+        $payload = $api->getPayload($email, $envelope);
+
+        $metaFromRecipients = $payload['recipients'][0]['metadata'];
+        $this->assertEquals($meta, $metaFromRecipients);
+        $tagsFromRecipients = $payload['recipients'][0]['tags'];
+        $this->assertEquals($tags, $tagsFromRecipients);
+
+        // Or using the smtp api
+        // https://developers.sparkpost.com/api/smtp/#header-using-the-x-msys-api-custom-header
+        $email = new Email();
+        $msys = [
+            'metadata' => $meta,
+            // Tags are available in click/open events. Maximum number of tags is 10 per recipient, 100 system wide.
+            'tags' => $tags
+        ];
+        // It's one big json blob
+        $email->getHeaders()->addTextHeader('X-MSYS-API', json_encode($msys));
+        $email->setTo('dummy@localhost');
+        $client = SparkPostHelper::getClient();
+        $api = new SparkPostApiTransport($client);
+
+        $sender = $email->getSender()[0] ?? $email->getFrom()[0] ?? null;
+        $recipients = $email->getTo();
+        $envelope ??= new Envelope($sender, $recipients);
+        $payload = $api->getPayload($email, $envelope);
+
+        $metaFromRecipients = $payload['recipients'][0]['metadata'];
+        $this->assertEquals($meta, $metaFromRecipients);
+        $tagsFromRecipients = $payload['recipients'][0]['tags'];
+        $this->assertEquals($tags, $tagsFromRecipients);
+
+        // Beware of settings headers multiple times
+
+        $email = new Email();
+        $email->getHeaders()->addTextHeader('X-MC-Metadata', json_encode($wrongMeta));
+        $email->getHeaders()->addTextHeader('X-MC-Metadata', json_encode($meta));
+        $email->setTo('dummy@localhost');
+        $client = SparkPostHelper::getClient();
+        $api = new SparkPostApiTransport($client);
+
+        $stringHeaders = $email->getHeaders()->toString();
+        // It's not a unique header, it appears twice
+        $this->assertEquals(2, substr_count($stringHeaders, 'X-MC-Metadata'));
+
+        $sender = $email->getSender()[0] ?? $email->getFrom()[0] ?? null;
+        $recipients = $email->getTo();
+        $envelope ??= new Envelope($sender, $recipients);
+        $payload = $api->getPayload($email, $envelope);
+
+        $metaFromRecipients = $payload['recipients'][0]['metadata'];
+        $this->assertEquals($wrongMeta, $metaFromRecipients);
+        $this->assertNotEquals($meta, $metaFromRecipients);
+
+        // Instead, use SparkPostHelper::addMetaData that can merge or replace headers
+
+        $email = new Email();
+
+        $mergedMeta = array_merge($wrongMeta, $meta);
+        SparkPostHelper::addMetaData($email, $wrongMeta);
+        SparkPostHelper::addMetaData($email, $meta);
+        $email->setTo('dummy@localhost');
+        $client = SparkPostHelper::getClient();
+        $api = new SparkPostApiTransport($client);
+
+        $stringHeaders = $email->getHeaders()->toString();
+        // Only once!
+        $this->assertEquals(1, substr_count($stringHeaders, 'X-MC-Metadata'));
+
+        $sender = $email->getSender()[0] ?? $email->getFrom()[0] ?? null;
+        $recipients = $email->getTo();
+        $envelope ??= new Envelope($sender, $recipients);
+        $payload = $api->getPayload($email, $envelope);
+
+        $metaFromRecipients = $payload['recipients'][0]['metadata'];
+        $this->assertEquals($mergedMeta, $metaFromRecipients);
+
+        SparkPostHelper::addMetaData($email, $wrongMeta, true);
+        SparkPostHelper::addMetaData($email, $meta, true);
+        $email->setTo('dummy@localhost');
+        $client = SparkPostHelper::getClient();
+        $api = new SparkPostApiTransport($client);
+
+        $stringHeaders = $email->getHeaders()->toString();
+        // Only once!
+        $this->assertEquals(1, substr_count($stringHeaders, 'X-MC-Metadata'));
+
+        $sender = $email->getSender()[0] ?? $email->getFrom()[0] ?? null;
+        $recipients = $email->getTo();
+        $envelope ??= new Envelope($sender, $recipients);
+        $payload = $api->getPayload($email, $envelope);
+
+        $metaFromRecipients = $payload['recipients'][0]['metadata'];
+        $this->assertEquals($meta, $metaFromRecipients);
     }
 }

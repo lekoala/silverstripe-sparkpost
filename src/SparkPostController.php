@@ -11,7 +11,6 @@ use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Security\Permission;
 use SilverStripe\Control\HTTPResponse;
 use LeKoala\SparkPost\Api\SparkPostApiClient;
-use SilverStripe\Control\HTTP;
 use SilverStripe\ORM\ArrayList;
 
 /**
@@ -455,23 +454,23 @@ class SparkPostController extends Controller
             $this->extend('onAnyEvent', $data, $type);
 
             switch ($type) {
-                    //Click, Open
+                //Click, Open
                 case SparkPostApiClient::TYPE_ENGAGEMENT:
                     $this->extend('onEngagementEvent', $data, $type);
                     break;
-                    //Generation Failure, Generation Rejection
+                //Generation Failure, Generation Rejection
                 case SparkPostApiClient::TYPE_GENERATION:
                     $this->extend('onGenerationEvent', $data, $type);
                     break;
-                    //Bounce, Delivery, Injection, SMS Status, Spam Complaint, Out of Band, Policy Rejection, Delay
+                //Bounce, Delivery, Injection, SMS Status, Spam Complaint, Out of Band, Policy Rejection, Delay
                 case SparkPostApiClient::TYPE_MESSAGE:
                     $this->extend('onMessageEvent', $data, $type);
                     break;
-                    //Relay Injection, Relay Rejection, Relay Delivery, Relay Temporary Failure, Relay Permanent Failure
+                //Relay Injection, Relay Rejection, Relay Delivery, Relay Temporary Failure, Relay Permanent Failure
                 case SparkPostApiClient::TYPE_RELAY:
                     $this->extend('onRelayEvent', $data, $type);
                     break;
-                    //List Unsubscribe, Link Unsubscribe
+                //List Unsubscribe, Link Unsubscribe
                 case SparkPostApiClient::TYPE_UNSUBSCRIBE:
                     $this->extend('onUnsubscribeEvent', $data, $type);
                     break;

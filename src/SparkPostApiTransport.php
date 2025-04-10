@@ -293,8 +293,9 @@ class SparkPostApiTransport extends AbstractApiTransport
             if (!empty($tags)) {
                 $recipient['tags'] = $tags;
             }
-            // TODO: metadata are not valid?
             if (!empty($metadata)) {
+                // For each recipient, you can specify metadata and substitution data to personalize each email
+                // Recipient metadata takes precedence over transmission metadata
                 $recipient['metadata'] = $metadata;
             }
             $recipients[] = $recipient;
@@ -397,7 +398,6 @@ class SparkPostApiTransport extends AbstractApiTransport
         }
         return $header->getBody();
     }
-
 
     /**
      * Log message content
