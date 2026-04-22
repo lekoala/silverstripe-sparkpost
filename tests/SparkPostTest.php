@@ -2,7 +2,6 @@
 
 namespace LeKoala\SparkPost\Test;
 
-use LeKoala\Base\Email\EmailHelper;
 use LeKoala\SparkPost\SparkPostApiTransport;
 use SilverStripe\Core\Environment;
 use SilverStripe\Dev\SapphireTest;
@@ -326,5 +325,59 @@ HTML;
 
         $metaFromRecipients = $payload['recipients'][0]['metadata'];
         $this->assertEquals($meta, $metaFromRecipients);
+    }
+
+    public function testAttachmentBasic(): void
+    {
+        $mailer = SparkPostHelper::registerTransport();
+        /** @var \LeKoala\SparkPost\SparkPostApiTransport $transport */
+        $transport = SparkPostHelper::getTransportFromMailer($mailer);
+
+        $sender = new Address('test@test.com', 'testman');
+        $recipients = [
+            new Address('rec@test.com', 'testrec'),
+        ];
+
+        $email = new Email();
+        $email->html('<p>Hello</p>');
+        $email->attach('PDF file content here', 'document.pdf', 'application/pdf');
+
+        $envelope = new Envelope($sender, $recipients);
+        $payload = $transport->getPayload($email, $envelope);
+
+        $this->assertCount(1, $payload['attachments']);
+        $this->assertEquals('document.pdf', $payload['attachments'][0]['name']);
+        // Symfony Mime adds name parameter automatically
+        $this->assertStringStartsWith('application/pdf', $payload['attachments'][0]['type']);
+        $this->assertEquals(base64_encode('PDF file content here'), $payload['attachments'][0]['data']);
+    }
+
+    public function testAttachmentMimeTypePreservesParameters(): void
+    {
+        $mailer = SparkPostHelper::registerTransport();
+        /** @var \LeKoala\SparkPost\SparkPostApiTransport $transport */
+        $transport = SparkPostHelper::getTransportFromMailer($mailer);
+
+        $sender = new Address('test@test.com', 'testman');
+        $recipients = [
+            new Address('rec@test.com', 'testrec'),
+        ];
+
+        $email = new Email();
+        $email->html('<p>Hello</p>');
+        $email->attach(
+            "BEGIN:VCALENDAR\r\nMETHOD:REQUEST\r\nEND:VCALENDAR\r\n",
+            'invite.ics',
+            'text/calendar; charset=\"UTF-8\"; method=REQUEST'
+        );
+
+        $envelope = new Envelope($sender, $recipients);
+        $payload = $transport->getPayload($email, $envelope);
+
+        $this->assertCount(1, $payload['attachments']);
+        $this->assertEquals('invite.ics', $payload['attachments'][0]['name']);
+        // Verify that the full content type with parameters is preserved
+        $this->assertStringContainsString('text/calendar', $payload['attachments'][0]['type']);
+        $this->assertStringContainsString('method=REQUEST', $payload['attachments'][0]['type']);
     }
 }

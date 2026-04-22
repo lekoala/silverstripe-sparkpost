@@ -167,7 +167,7 @@ class SparkPostApiTransport extends AbstractApiTransport
 
             $result[] = [
                 'name' => $file->getParameter('filename'),
-                'type' => $type->getValue(),
+                'type' => $type->getBodyAsString(),
                 'data' => base64_encode($attachment->getBody()),
             ];
         }

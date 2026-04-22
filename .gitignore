@@ -1,0 +1,5 @@
+/app/
+/public/
+/vendor/
+/.phpunit.cache/
+/composer.lock
