@@ -19,6 +19,8 @@ use Symfony\Component\Mime\Address;
  */
 class SparkPostTest extends SapphireTest
 {
+    protected $usesDatabase = false;
+
     /**
      * @var MailerInterface
      */
@@ -43,6 +45,12 @@ class SparkPostTest extends SapphireTest
         parent::tearDown();
 
         Injector::inst()->registerService($this->testMailer, MailerInterface::class);
+    }
+
+    public static function tearDownAfterClass(): void
+    {
+        // Skip parent tearDownAfterClass to avoid database cleanup errors
+        // since we don't use the database (usesDatabase = false)
     }
 
     public function testSetup(): void
@@ -379,5 +387,109 @@ HTML;
         // Verify that the full content type with parameters is preserved
         $this->assertStringContainsString('text/calendar', $payload['attachments'][0]['type']);
         $this->assertStringContainsString('method=REQUEST', $payload['attachments'][0]['type']);
+    }
+
+    public function testCreateTransmissionRedirectsRecipients(): void
+    {
+        // Store original value
+        $originalRedirect = Environment::getEnv('SS_SEND_ALL_EMAILS_TO');
+
+        // Set redirection email
+        Environment::setEnv('SS_SEND_ALL_EMAILS_TO', 'redirect@example.com');
+
+        // Create a testable API client that captures the data sent to makeRequest
+        $capturedData = null;
+        $client = new class('dummy-key') extends \LeKoala\SparkPost\Api\SparkPostApiClient {
+            public ?array $capturedData = null;
+
+            protected function makeRequest($endpoint, $action = null, $data = null): array
+            {
+                $this->capturedData = is_string($data) ? json_decode($data, true) : $data;
+                return ['total_accepted_recipients' => 1, 'id' => 'test-id'];
+            }
+
+            public function testCreateTransmission($data): array
+            {
+                return $this->createTransmission($data);
+            }
+
+            public function getCapturedData(): ?array
+            {
+                return $this->capturedData;
+            }
+        };
+
+        $data = [
+            'recipients' => [
+                ['address' => ['email' => 'original1@example.com', 'name' => 'User One']],
+                ['address' => ['email' => 'original2@example.com', 'name' => 'User Two']],
+            ],
+            'subject' => 'Test Subject',
+        ];
+
+        $client->testCreateTransmission($data);
+        $captured = $client->getCapturedData();
+
+        // Verify all recipients were redirected
+        $this->assertNotNull($captured);
+        $this->assertCount(2, $captured['recipients']);
+        $this->assertEquals('redirect@example.com', $captured['recipients'][0]['address']['email']);
+        $this->assertEquals('User One', $captured['recipients'][0]['address']['name']);
+        $this->assertEquals('redirect@example.com', $captured['recipients'][1]['address']['email']);
+        $this->assertEquals('User Two', $captured['recipients'][1]['address']['name']);
+
+        // Restore original value
+        if ($originalRedirect !== false) {
+            Environment::setEnv('SS_SEND_ALL_EMAILS_TO', $originalRedirect);
+        } else {
+            Environment::setEnv('SS_SEND_ALL_EMAILS_TO', '');
+        }
+    }
+
+    public function testCreateTransmissionNoRedirectWhenEnvNotSet(): void
+    {
+        // Store original value and clear it
+        $originalRedirect = Environment::getEnv('SS_SEND_ALL_EMAILS_TO');
+        Environment::setEnv('SS_SEND_ALL_EMAILS_TO', '');
+
+        // Create a testable API client
+        $client = new class('dummy-key') extends \LeKoala\SparkPost\Api\SparkPostApiClient {
+            public ?array $capturedData = null;
+
+            protected function makeRequest($endpoint, $action = null, $data = null): array
+            {
+                $this->capturedData = is_string($data) ? json_decode($data, true) : $data;
+                return ['total_accepted_recipients' => 1, 'id' => 'test-id'];
+            }
+
+            public function testCreateTransmission($data): array
+            {
+                return $this->createTransmission($data);
+            }
+
+            public function getCapturedData(): ?array
+            {
+                return $this->capturedData;
+            }
+        };
+
+        $data = [
+            'recipients' => [
+                ['address' => ['email' => 'original@example.com', 'name' => 'User']],
+            ],
+            'subject' => 'Test Subject',
+        ];
+
+        $client->testCreateTransmission($data);
+        $captured = $client->getCapturedData();
+
+        // Verify recipient was NOT redirected
+        $this->assertNotNull($captured);
+        $this->assertEquals('original@example.com', $captured['recipients'][0]['address']['email']);
+
+        // Restore original value
+        if ($originalRedirect !== false) {
+            Environment::setEnv('SS_SEND_ALL_EMAILS_TO', $originalRedirect);
+        }
     }
 }

@@ -51,7 +51,8 @@
     },
     "scripts": {
         "lint": "phpcs src/ tests/",
-        "lint-clean": "phpcbf src/ tests/"
+        "lint-clean": "phpcbf src/ tests/",
+        "test": "phpunit tests/"
     },
     "config": {
         "allow-plugins": {

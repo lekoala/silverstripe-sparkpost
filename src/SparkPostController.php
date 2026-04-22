@@ -365,7 +365,7 @@ class SparkPostController extends Controller
             // Maybe processing payload will create exceptions, but we
             // catch them to send a proper response to the API
             $logLevel = self::config()->log_level ? self::config()->log_level : 7;
-            $this->getLogger()->log($ex->getMessage(), $logLevel);
+            $this->getLogger()->log($logLevel, $ex->getMessage());
         }
 
         $response->setBody('OK');

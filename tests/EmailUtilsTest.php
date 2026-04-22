@@ -13,6 +13,8 @@ use Symfony\Component\Mime\Address;
  */
 class EmailUtilsTest extends SapphireTest
 {
+    protected $usesDatabase = false;
+
     public function testDisplayName(): void
     {
         $arr = [
@@ -113,5 +115,11 @@ HTML;
         $this->assertEquals($expected, EmailUtils::stringify($testAddr));
         $this->assertEquals($expected, EmailUtils::stringify($testArr));
         $this->assertEquals($expected, EmailUtils::stringify($testArr2));
+    }
+
+    public static function tearDownAfterClass(): void
+    {
+        // Skip parent tearDownAfterClass to avoid database cleanup errors
+        // since we don't use the database (usesDatabase = false)
     }
 }

@@ -6,6 +6,7 @@ use Exception;
 use InvalidArgumentException;
 use DateTime;
 use LeKoala\SparkPost\EmailUtils;
+use SilverStripe\Core\Environment;
 
 /**
  * A really simple SparkPost api client
@@ -360,6 +361,14 @@ class SparkPostApiClient
         ];
 
         $data = $this->mapData($data, $mapping);
+
+        // Handle SS_SEND_ALL_EMAILS_TO redirection
+        $redirectionEmail = Environment::getEnv('SS_SEND_ALL_EMAILS_TO');
+        if (!empty($redirectionEmail) && !empty($data['recipients'])) {
+            foreach ($data['recipients'] as $recipientIndex => $recipient) {
+                $data['recipients'][$recipientIndex]['address']['email'] = $redirectionEmail;
+            }
+        }
 
         return $this->makeRequest('transmissions', self::METHOD_POST, $data);
     }
