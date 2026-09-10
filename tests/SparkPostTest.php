@@ -446,6 +446,97 @@ HTML;
         }
     }
 
+    public function testCreateTransmissionRedirectsStringAddresses(): void
+    {
+        $originalRedirect = Environment::getEnv('SS_SEND_ALL_EMAILS_TO');
+        Environment::setEnv('SS_SEND_ALL_EMAILS_TO', 'redirect@example.com');
+
+        $client = new class('dummy-key') extends \LeKoala\SparkPost\Api\SparkPostApiClient {
+            public ?array $capturedData = null;
+
+            protected function makeRequest($endpoint, $action = null, $data = null): array
+            {
+                $this->capturedData = is_string($data) ? json_decode($data, true) : $data;
+                return ['total_accepted_recipients' => 1, 'id' => 'test-id'];
+            }
+
+            public function testCreateTransmission($data): array
+            {
+                return $this->createTransmission($data);
+            }
+
+            public function getCapturedData(): ?array
+            {
+                return $this->capturedData;
+            }
+        };
+
+        // an address string is a bare email, used as the envelope RCPT TO
+        $data = [
+            'recipients' => [
+                ['address' => 'original1@example.com'],
+                ['address' => 'original2@example.com', 'substitution_data' => ['token' => 'abc']],
+            ],
+            'subject' => 'Test Subject',
+        ];
+
+        $client->testCreateTransmission($data);
+        $captured = $client->getCapturedData();
+
+        $this->assertNotNull($captured);
+        $this->assertEquals('redirect@example.com', $captured['recipients'][0]['address']);
+        $this->assertEquals('redirect@example.com', $captured['recipients'][1]['address']);
+        $this->assertEquals(['token' => 'abc'], $captured['recipients'][1]['substitution_data']);
+
+        if ($originalRedirect !== false) {
+            Environment::setEnv('SS_SEND_ALL_EMAILS_TO', $originalRedirect);
+        } else {
+            Environment::setEnv('SS_SEND_ALL_EMAILS_TO', '');
+        }
+    }
+
+    public function testCreateTransmissionLeavesRecipientListUntouched(): void
+    {
+        $originalRedirect = Environment::getEnv('SS_SEND_ALL_EMAILS_TO');
+        Environment::setEnv('SS_SEND_ALL_EMAILS_TO', 'redirect@example.com');
+
+        $client = new class('dummy-key') extends \LeKoala\SparkPost\Api\SparkPostApiClient {
+            public ?array $capturedData = null;
+
+            protected function makeRequest($endpoint, $action = null, $data = null): array
+            {
+                $this->capturedData = is_string($data) ? json_decode($data, true) : $data;
+                return ['total_accepted_recipients' => 1, 'id' => 'test-id'];
+            }
+
+            public function testCreateTransmission($data): array
+            {
+                return $this->createTransmission($data);
+            }
+
+            public function getCapturedData(): ?array
+            {
+                return $this->capturedData;
+            }
+        };
+
+        // recipientList maps to recipients.list_id, there is no address to rewrite
+        $client->testCreateTransmission([
+            'recipientList' => 'my-list',
+            'subject' => 'Test Subject',
+        ]);
+        $captured = $client->getCapturedData();
+
+        $this->assertNotNull($captured);
+        $this->assertEquals(['list_id' => 'my-list'], $captured['recipients']);
+
+        if ($originalRedirect !== false) {
+            Environment::setEnv('SS_SEND_ALL_EMAILS_TO', $originalRedirect);
+        } else {
+            Environment::setEnv('SS_SEND_ALL_EMAILS_TO', '');
+        }
+    }
+
     public function testCreateTransmissionNoRedirectWhenEnvNotSet(): void
     {
         // Store original value and clear it

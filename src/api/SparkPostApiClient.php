@@ -364,9 +364,18 @@ class SparkPostApiClient
 
         // Handle SS_SEND_ALL_EMAILS_TO redirection
         $redirectionEmail = Environment::getEnv('SS_SEND_ALL_EMAILS_TO');
-        if (!empty($redirectionEmail) && !empty($data['recipients'])) {
+        if (!empty($redirectionEmail) && !empty($data['recipients']) && is_array($data['recipients'])) {
             foreach ($data['recipients'] as $recipientIndex => $recipient) {
-                $data['recipients'][$recipientIndex]['address']['email'] = $redirectionEmail;
+                // recipients can also be a stored list (recipients.list_id), which cannot be redirected
+                if (!is_array($recipient) || !isset($recipient['address'])) {
+                    continue;
+                }
+                // an address is either a plain email string or an array with email/name keys
+                if (is_array($recipient['address'])) {
+                    $data['recipients'][$recipientIndex]['address']['email'] = $redirectionEmail;
+                } else {
+                    $data['recipients'][$recipientIndex]['address'] = $redirectionEmail;
+                }
             }
         }
 
