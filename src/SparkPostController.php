@@ -11,7 +11,7 @@ use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Security\Permission;
 use SilverStripe\Control\HTTPResponse;
 use LeKoala\SparkPost\Api\SparkPostApiClient;
-use SilverStripe\ORM\ArrayList;
+use SilverStripe\Model\List\ArrayList;
 
 /**
  * Provide extensions points for handling the webhook

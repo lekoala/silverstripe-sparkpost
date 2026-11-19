@@ -7,7 +7,7 @@ use SilverStripe\Forms\Tab;
 use SilverStripe\Forms\Form;
 use SilverStripe\Forms\TabSet;
 use SilverStripe\ORM\ArrayLib;
-use SilverStripe\ORM\ArrayList;
+use SilverStripe\Model\List\ArrayList;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\View\ArrayData;
 use SilverStripe\Control\Session;
@@ -21,7 +21,7 @@ use SilverStripe\Forms\FormAction;
 use SilverStripe\Admin\LeftAndMain;
 use SilverStripe\Forms\HiddenField;
 use SilverStripe\Security\Security;
-use SilverStripe\View\ViewableData;
+use SilverStripe\Model\ModelData;
 use SilverStripe\Forms\LiteralField;
 use SilverStripe\Control\Email\Email;
 use SilverStripe\Control\HTTPRequest;
@@ -106,7 +106,7 @@ class SparkPostAdmin extends LeftAndMain implements PermissionProvider
     protected $lastException = null;
 
     /**
-     * @var ViewableData|null
+     * @var ModelData|null
      */
     protected $currentMessage = null;
 
